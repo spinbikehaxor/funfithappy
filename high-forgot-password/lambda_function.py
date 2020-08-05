@@ -2,6 +2,7 @@ import boto3
 from botocore.exceptions import ClientError
 import datetime
 import json
+import jwt
 from datetime import datetime, timedelta
 
 def lambda_handler(event, context):
@@ -16,16 +17,42 @@ def lambda_handler(event, context):
     json_data = json.loads(json_string)
     body = json.loads(json_data['body'])
     
-    email = body['email']
+    username = body['username']
+    if not username:
+        return {
+            'statusCode': 422,
+            'headers': 
+             {
+                'Access-Control-Allow-Headers': '*',
+                'Access-Control-Allow-Origin':  '*',
+                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
+             },
+            'body': json.dumps('Please enter a username')
+        }
+        
+    email = getUserEmail(username)
+    if not email:
+        print("no record found for " + username)
+        return {
+            'statusCode': 200,
+            'headers': 
+             {
+                'Access-Control-Allow-Headers': '*',
+                'Access-Control-Allow-Origin':  '*',
+                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
+             },
+            'body': json.dumps('If an account exists for the username and email specified, an email has been sent to reset your password.')
+        }
     client = boto3.client('ses',region_name=AWS_REGION)
-    token = createJWT(email);
-    print(token);
-    
+    token_json = json.loads(createJWT(username));
+    token = token_json['token']
+    url = "https://anniecassiefit.net/reset-password.html?token=" + token
 
     BODY_TEXT = ("A request was submitted to reset your Annie Cassie Fit password. If you submitted this request, please click the provided link to reset your password.")
     BODY_HTML = """<html><head></head><body>
   <h1>Password Reset: Annie Cassie Fit</h1>
-  <p>"A request was submitted to reset your Annie Cassie Fit password. If you submitted this request, please click the provided link to reset your password</a>."</p>
+  <p>"A request was submitted to reset your Annie Cassie Fit password. If you submitted this request, please click the provided link to 
+  <a href=""" + url + """>reset your password</a>."</p>
 </body></html>
  """ 
 
@@ -67,24 +94,46 @@ def lambda_handler(event, context):
     
     return {
         'statusCode': 200,
-        'body': json.dumps('Hello from Lambda!')
+        'headers': {
+            'Access-Control-Allow-Headers': '*',
+            'Access-Control-Allow-Origin':  '*',
+            'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
+        },
+        'body': json.dumps('Forgot Password Email Sent!')
     }
 
-def createJWT(email):
-    secretString = json.dumps(get_secret('jwt-secret'))
+def createJWT(username):
+    secretString = json.dumps(get_secret('pwd-reset-key'))
     secretData = json.loads(secretString)
-    JWT_SECRET = secretData['jwt-secret']
+    JWT_SECRET = secretData['pwd-reset-key']
 
     JWT_ALGORITHM = 'HS256'
     JWT_EXP_DELTA_SECONDS = 60*60*.3 #20 minute token
 
     payload = {
-        'email': email,
+        'username': username,
         'exp': datetime.now() + timedelta(seconds=JWT_EXP_DELTA_SECONDS)
     }
     jwt_token = jwt.encode(payload, JWT_SECRET, JWT_ALGORITHM)
     return json.dumps({'token': jwt_token.decode('utf-8')})
     
+def getUserEmail(username):
+    print("in getUserEmail")
+    dynamodb = boto3.resource('dynamodb', region_name='us-east-2', endpoint_url="https://dynamodb.us-east-2.amazonaws.com")
+    table = dynamodb.Table('HighUsers')
+    
+    response = table.get_item(Key={'username': username})
+    if 'Item' not in response.keys():
+        print("user record not found")
+        return None
+    else:
+        print("found user!")
+        user_data_string = json.dumps(response['Item'])
+        user_data = json.loads(user_data_string)
+        
+        dbEmail = user_data['email']
+        return dbEmail
+
     
 def get_secret(secret_name):
     region_name = "us-east-2"

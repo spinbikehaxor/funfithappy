@@ -40,26 +40,30 @@ def isAuthorized(jwt_token):
 def authorizeUser(headers):
     print("checking for api key")
     if 'x-api-key' not in headers.keys():
-        return 
-        {
-            'statusCode': 401,
-            'body': json.dumps('No token header')
-        }
+        return False
+       
     else:
         authHeader = headers['x-api-key']
         if not isAuthorized(authHeader):
-            return 
-            {
-                'statusCode': 401,
-                'body': json.dumps('User is not authorized to retrieve data for ' + username)
-            }
+            return False
+        
+        return True
 
 def lambda_handler(event, context):
     print("in lambda_handler")
     json_string = json.dumps(event)
     print(json_string)
     json_data = json.loads(json_string)
-    authorizeUser(json_data['headers'])
+    if not authorizeUser(json_data['headers']):
+        return {
+            'statusCode': 401,
+            'headers': {
+                'Access-Control-Allow-Headers': '*',
+                'Access-Control-Allow-Origin':  '*',
+                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
+            },
+            'body': json.dumps('User is not logged in')
+        }
     print("username = " + username)
     body = json.loads(json_data['body'])
     
@@ -70,6 +74,11 @@ def lambda_handler(event, context):
         print("No Transaction Details Received!")
         return {
             'statusCode': 500,
+            'headers': {
+                'Access-Control-Allow-Headers': '*',
+                'Access-Control-Allow-Origin':  '*',
+                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
+            },
             'body': json.dumps('No Transaction Details Received!')
         }
     else:
@@ -123,10 +132,7 @@ def lambda_handler(event, context):
             'body': json.dumps('Transaction written to DynamoDB!')
         }
     
-    return {
-        'statusCode': 200,
-        'body': json.dumps('Hello from Lambda!')
-    }
+
     
     
 def get_secret(secret_name):

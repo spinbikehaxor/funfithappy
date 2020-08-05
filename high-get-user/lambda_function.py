@@ -100,7 +100,7 @@ def lambda_handler(event, context):
         user_data_string = json.dumps(response['Item'])
         user_data = json.loads(user_data_string)
         
-        dateSigned = getWaiver(user_data['email'])
+        dateSigned = getWaiver(user_data['username'], user_data['email'])
         subscription_data = getPayPalSubscription(user_data['username'])
         print(str(subscription_data))
        
@@ -132,12 +132,13 @@ def lambda_handler(event, context):
             'body': json.dumps(user)
         }
       
-def getWaiver(email):
-    table = dynamodb.Table('HighWaiver')
+def getWaiver(username, email):
+    table = dynamodb.Table('HighWaivers')
+    print("looking up waiver for " + username)
 
-    response = table.get_item(Key={'email': email})
+    response = table.get_item(Key={'username': username, 'email' : email})
     if 'Item' not in response.keys():
-        print("no waiver found for " + email)
+        print("no waiver found for " + username)
         return None
         
     else:
@@ -205,7 +206,7 @@ def getPayPalSubscription(username):
         auth_token = login_to_paypal();
         auth_token_param = "Bearer " + auth_token
         
-        url = "https://api.sandbox.paypal.com/v1/billing/subscriptions/" + subscription_id
+        url = "https://api.paypal.com/v1/billing/subscriptions/" + subscription_id
         headers = {'Content-Type': 'application/json', 'Authorization': auth_token_param }
         
         r= requests.get(url, headers=headers)
@@ -224,13 +225,13 @@ def getPayPalSubscription(username):
         
 def login_to_paypal():
     print('in login_to_paypal')
-    paypal_client_id = "AfczQEX7edmNWq_WIkbfKGlxv6sr-7e61dmqx2n_ibIdMhotSk1G5ImCwsV37Mgc45sHBk-xzQGy6ctQ"
+    paypal_client_id = "ARFAJ4v0DMU0-jp__jkVEVNYP139DlETKokloLrUywQ0qjlOs0H5x1ETIVDJARd3rBuCPJHGKWrdZ2fY"
     
     secretString = json.dumps(get_secret('PaypalSecret'))
     secretData = json.loads(secretString)
     paypalSecret = secretData['PaypalSecret']
     
-    url = "https://api.sandbox.paypal.com/v1/oauth2/token"
+    url = "https://api.paypal.com/v1/oauth2/token"
     payload= {'grant_type': 'client_credentials'}
 
     r= requests.post(url, payload, auth=HTTPBasicAuth(paypal_client_id, paypalSecret))
