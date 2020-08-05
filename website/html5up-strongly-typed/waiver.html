@@ -1,0 +1,248 @@
+<!DOCTYPE HTML>
+<!--
+	Strongly Typed by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+	<head>
+		<title>Waiver</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<script src="https://www.google.com/recaptcha/api.js"></script>
+	</head>
+	<body class="no-sidebar is-preload">
+		<div id="page-wrapper">
+
+			<!-- Header 
+				<section id="header">
+					<div class="container">
+
+					
+							<h1 id="logo"><a href="index.html"></a>Annie Cassie Fit</h1>
+							<p>Waiver</p>
+
+				
+							<nav id="nav">
+								<ul>
+									<li><a class="icon solid fa-home" href="index.html"><span>Home</span></a></li>
+									<li><a class="icon solid fa-sitemap" href="registration.html"><span>Create Your Account</span></a></li>
+									<li><a class="icon solid fa-sitemap" href="sign-in.html"><span>Sign In</span></a></li>
+									<li><a class="icon solid fa-cog" href="left-sidebar.html"><span>High Fitness</span></a></li>
+									<li><a class="icon solid fa-retweet" href="right-sidebar.html"><span>Boot Camp</span></a></li>
+									<li><a class="icon solid fa-sitemap" href="registration.html"><span>About Annie and Cassie</span></a></li>
+								</ul>
+							</nav>
+
+					</div>
+				</section>-->
+
+			<!-- Main -->
+				<section id="main">
+					<div class="container">
+						<div class="row">
+							<div class="col-6 col-12-medium">
+								<section>
+									<form method="post" action="https://mswp3lsdrl.execute-api.us-east-2.amazonaws.com/default/register">
+										<div class="row gtr-50">
+											<div class="image img">
+												<img src="images/waiver1.jpg">
+											</div>
+											<div class="col-6 col-12-small">
+											</div>
+											<div class="image fit">
+												<img src="images/waiver2.png">
+											</div>
+							
+											<div class="col-6 col-12-small">
+												<input name="fname" id="fname" placeholder="First Name" type="text" />
+											</div>
+											<div class="col-6 col-12-small">
+												<input name="lname" id="lname" placeholder="Last Name" type="text" />
+											</div>
+											<div class="col-6 col-12-small">
+												<input name="email" id="email" placeholder="Email" type="text" />
+											</div>
+											<div class="col-6 col-12-small">
+												<input name="phone" id="phone" placeholder="Phone" type="text" />
+											</div>
+											<div class="col-6 col-12-small">
+												<input name="phone" id="street" placeholder="Address (Street)" type="text" />
+											</div>
+											<div class="col-6 col-12-small">
+												<input name="phone" id="city" placeholder="Address (City)" type="text" />
+											</div>
+											<div class="col-6 col-12-small">
+												<input name="phone" id="state" placeholder="Address (State)" type="text" />
+											</div>
+											<div class="col-6 col-12-small">
+												<input name="phone" id="zip" placeholder="Address (Zip)" type="text" />
+											</div>
+											<div class="col-6 col-12-small">
+											</div>
+											<div class="image fit">
+												<img src="images/waiver3.png">
+											</div>
+											<div class="col-6 col-12-small">
+											</div>
+											<div class="image fit"	>
+												<img src="images/waiver4.png">
+											</div>
+										
+
+											<div class="col-6 col-12-small">
+												<input name="esig" id="esig" placeholder="Electronic Signature" type="text" />
+											</div>
+											<div class="col-6 col-12-small">
+												<input name="print-name" id="print-name" placeholder="Print Name" type="text" />
+											</div>
+											<div class="col-12">
+												<a href="javascript:xmlRequest()" class="form-button-submit button icon solid fa-envelope">Submit</a>
+											</div>
+										</div>
+									</form>
+								</section>
+							</div>
+					</div>
+				</section>
+
+			<!-- Footer -->
+				
+					<div id="copyright" class="container">
+						<ul class="links">
+							<li>&copy; Untitled. All rights reserved.</li><li>Design: <a href="http://html5up.net">HTML5 UP</a></li>
+						</ul>
+					</div>
+				</section>
+
+		</div>
+
+		<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/jquery.dropotron.min.js"></script>
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+
+<script>
+
+window.onload = getUserData()
+
+function parseCookie()
+{
+	jwt = document.cookie.split('; ')
+  	.find(row => row.startsWith('auth'))
+  	.split('=')[1];
+
+  	return jwt;
+}
+
+
+function getUserData()
+{
+	var postRequest = new XMLHttpRequest()
+
+	postRequest.open('POST', 'https://zkhudp5vdk.execute-api.us-east-2.amazonaws.com/default/any', true)
+	postRequest.setRequestHeader('Content-type', 'application/json;charset=UTF-8');
+	postRequest.setRequestHeader('X-Api-Key', parseCookie())
+	//postRequest.withCredentials = true;
+	
+	postRequest.onload = function () 
+	{
+	  // Begin accessing JSON data here
+	  var responseData = JSON.parse(this.response)
+
+	  if (postRequest.status >= 200 && postRequest.status < 400) 
+	  {
+	  		//alert("success! " + postRequest.responseText)
+	  		populatePage(postRequest.responseText)
+	  		//window.location.replace("../index.html")
+	  }
+	  else 
+	  {
+	  	alert(postRequest.responseText)
+	  }
+	}
+
+	postRequest.send()
+}
+
+function populatePage(requestData)
+{
+	json = JSON.parse(requestData);
+	
+	document.getElementById("fname").value = json.fname;
+	document.getElementById("fname").disabled = true;
+
+	document.getElementById("lname").value = json.lname;
+	document.getElementById("lname").disabled = true;
+
+	document.getElementById("phone").value = json.phone;
+	document.getElementById("phone").disabled = true;
+
+	document.getElementById("email").value = json.email;
+	document.getElementById("email").disabled = true;
+}
+
+
+
+function xmlRequest()
+{
+	
+	var postRequest = new XMLHttpRequest()
+
+	var data = {
+  		"fname"				: document.getElementById('fname').value,
+  		"lname"				: document.getElementById('lname').value,
+  		"email"				: document.getElementById('email').value,
+  		"street"			: document.getElementById('street').value,
+  		"city"				: document.getElementById('city').value,
+  		"state"				: document.getElementById('state').value,
+  		"zip"				: document.getElementById('zip').value,
+  		"phone"				: document.getElementById('phone').value,
+  		"esig"				: document.getElementById('esig').value,
+  		"print-name"		: document.getElementById('print-name').value,
+	};
+
+	postRequest.open('POST', 'https://fzpgg9kksg.execute-api.us-east-2.amazonaws.com/default/any', true)
+	postRequest.setRequestHeader('Content-type', 'application/json;charset=UTF-8');
+	postRequest.setRequestHeader('X-Api-Key', parseCookie())
+	
+	postRequest.onload = function () 
+	{
+	  // Begin accessing JSON data here
+	  var responseData = JSON.parse(this.response)
+
+	  if (postRequest.status >= 200 && postRequest.status < 400) 
+	  {
+	  		alert("Waiver Saved!")
+	  		window.location.replace("../user-info.html")
+	  }
+	  else 
+	  {
+	  	alert(postRequest.responseText)
+	  /*  errors = JSON.parse(postRequest.responseText)
+	    alert(errors)
+	    
+	    for (x in errors) 
+	    {
+  			alert(errors[x])
+		}*/
+	  }
+	}
+
+	postRequest.send(JSON.stringify(data))
+}
+
+
+   function onSubmit(token) {
+     javascript:xmlRequest()
+   }
+
+
+</script>
+
+	</body>
+</html>

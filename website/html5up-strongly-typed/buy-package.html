@@ -1,0 +1,190 @@
+<!DOCTYPE HTML>
+<!--
+	Strongly Typed by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+	<head>
+		<title>Packages</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" /> 
+		<link rel="stylesheet" href="assets/css/main.css" />
+
+	</head>
+	<body class="no-sidebar is-preload">
+		<script src="https://www.paypal.com/sdk/js?client-id=ARFAJ4v0DMU0-jp__jkVEVNYP139DlETKokloLrUywQ0qjlOs0H5x1ETIVDJARd3rBuCPJHGKWrdZ2fY&vault=true" data-sdk-integration-source="button-factory"></script>
+  </script>
+		<div id="page-wrapper">
+
+			<!-- Header -->
+				<section id="header">
+					<div class="container">
+
+						<!-- Logo -->
+							<h1 id="logo"><a href="index.html">Buy A Package</a></h1>
+							<p><strong><span id ="subscription">Page Loading...Please Wait</span><strong></p>
+					
+
+						<!-- Nav -->
+							<!-- Nav -->
+							<nav id="nav">
+								<ul>
+									<li><a class="icon solid fa-home" href="index.html"><span>Home</span></a></li>
+									<li><a class="icon solid fa-sitemap" href="user-info.html"><span>Your Account</span></a></li>
+									<li><a class="icon solid fa-sitemap" href="buy-package.html"><span>Buy A Package</span></a></li>
+									<li><a class="icon solid fa-cog" href="high-fitness.html"><span>High Fitness</span></a></li>
+									<li><a class="icon solid fa-retweet" href="boot-camp.html"><span>Boot Camp</span></a></li>
+									<li><a class="icon solid fa-sitemap" href="javascript:signOut()"><span>Sign Out</span></a></li>
+								</ul>
+							</nav>
+
+					</div>
+				</section>
+
+			<!-- Main -->
+				<section id="main">
+					<div class="container">
+						<div id="content">
+
+							<!-- Post -->
+								<article class="box post">
+									<header>
+										<h2>Streaming Packages</h2>
+									</header>
+									<span class="image featured"><img src="images/HighJump2.jpg" alt="" /></span>
+									<h3>1 Month Unlimited Streaming - $20</h3>
+									<p> With this package, you'll have access to all High Replays as well as Annie's Bootcamp videos. 
+									<p>Current streaming times for High are:
+										<ul>
+											<li>Tuesdays at 10am and 6pm</li>
+											<li>Thursdays at 10am and 6pm</li>
+											<li>Sundays at 10am</li>
+										</ul>
+									<p>
+									<div id="paypal-button-container"></div>
+									<script>
+								      paypal.Buttons({
+									      style: {
+									          shape: 'rect',
+									          color: 'silver',
+									          layout: 'vertical',
+									          label: 'subscribe',
+									          
+									      },
+								        createSubscription: function(data, actions) {
+								          return actions.subscription.create({
+								            'plan_id': 'P-40S89537VJ958872PL4SJ2CA' // Creates the subscription
+								          });
+								        },
+								        onApprove: function(data, actions) {
+								          // data.subscriptionID); // Optional message given to subscriber
+								          xmlRequest(data);
+								          }
+								      }).render('#paypal-button-container'); // Renders the PayPal button
+								    </script>
+								</article>
+
+						</div>
+					</div>
+				</section>
+		</div>
+
+<!-- Scripts -->
+
+<script>
+window.onload = getSubscriptionStatus()
+function parseCookie()
+{
+	jwt = document.cookie.split('; ')
+  	.find(row => row.startsWith('auth'))
+  	.split('=')[1];
+
+  	return jwt;
+}
+
+
+function getSubscriptionStatus()
+{
+	var postRequest = new XMLHttpRequest()
+
+	postRequest.open('POST', 'https://zkhudp5vdk.execute-api.us-east-2.amazonaws.com/default/any', true)
+	postRequest.setRequestHeader('Content-type', 'application/json;charset=UTF-8');
+	postRequest.setRequestHeader('X-Api-Key', parseCookie())
+	//postRequest.withCredentials = true;
+	
+	postRequest.onload = function () 
+	{
+	  // Begin accessing JSON data here
+	  var responseData = JSON.parse(this.response)
+
+	  if (postRequest.status >= 200 && postRequest.status < 400) 
+	  {
+	  		hasSubscription(postRequest.responseText)
+	  }
+	  else 
+	  {
+	  	alert(postRequest.responseText)
+	  }
+	}
+
+	postRequest.send()
+}
+
+function hasSubscription(userdata)
+{
+	json = JSON.parse(userdata);
+
+	hasCurrentPayment = false;
+	if(json.isPaymentCurrent == "ACTIVE")
+	{
+		document.getElementById("subscription").textContent="Active Subscription On File - No Further Payment Required!"
+		document.getElementById("paypal-button-container").style.display = "none"
+	}
+	else
+	{
+		document.getElementById("subscription").textContent="Live And Streaming Classes"
+	}
+}
+
+function xmlRequest(data)
+{
+	var postRequest = new XMLHttpRequest()
+
+	postRequest.open('POST', 'https://7s6z0gkda0.execute-api.us-east-2.amazonaws.com/default/any', true)
+	postRequest.setRequestHeader('Content-type', 'application/json;charset=UTF-8');
+	postRequest.setRequestHeader('X-Api-Key', parseCookie())
+	
+	postRequest.onload = function () 
+	{
+	  // Begin accessing JSON data here
+	  var responseData = JSON.parse(this.response)
+
+	  if (postRequest.status >= 200 && postRequest.status < 400) 
+	  {
+	  		alert("Purchase Complete!")
+	  		window.location.replace("../user-info.html")
+	  }
+	}
+
+	postRequest.send(JSON.stringify(data))
+}
+
+
+function signOut()
+{
+	document.cookie = 'auth=' + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+	window.location.replace("index.html");
+}
+</script>
+
+<script src="assets/js/jquery.min.js"></script>
+<script src="assets/js/jquery.dropotron.min.js"></script>
+<script src="assets/js/browser.min.js"></script>
+<script src="assets/js/breakpoints.min.js"></script>
+<script src="assets/js/util.js"></script>
+<script src="assets/js/main.js"></script>
+
+	</body>
+</html>

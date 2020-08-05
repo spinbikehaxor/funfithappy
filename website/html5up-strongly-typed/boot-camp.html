@@ -1,0 +1,107 @@
+<!DOCTYPE HTML>
+<!--
+	Strongly Typed by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+	<head>
+		<title>High Fitness</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+	</head>
+	<body class="no-sidebar is-preload">
+		<div id="page-wrapper">
+
+			<!-- Header -->
+				<section id="header">
+					<div class="container">
+
+						<!-- Logo -->
+							<h1 id="logo"><a href="index.html">Boot Camp</a></h1>
+							<p>Classes On Demand</p>
+
+						<!-- Nav -->
+							<!-- Nav -->
+							<nav id="nav">
+								<ul>
+									<li><a class="icon solid fa-home" href="index.html"><span>Home</span></a></li>
+									<li><a class="icon solid fa-sitemap" id=reglink href="registration.html"><span id="regText">Create Your Account</span></a></li>
+									<li><a class="icon solid fa-sitemap" id="loginLink" href="sign-in.html"><span id="loginText">Sign In</span></a></li>
+									<li><a class="icon solid fa-cog" href="high-fitness.html"><span>High Fitness</span></a></li>
+									<li><a class="icon solid fa-retweet" href="boot-camp.html"><span>Boot Camp</span></a></li>
+									<li><a class="icon solid fa-sitemap" id="bioLink" href="high-fitness.html"><span id="bioText">About Annie & Cassie</span></a></li>
+								</ul>
+							</nav>
+
+					</div>
+				</section>
+
+			<!-- Main -->
+				<section id="main">
+					<div class="container">
+						<div id="content">
+
+							<!-- Post -->
+								<article class="box post">
+									<header>
+										<h2>Under Construction</h2>
+									</header>
+								</article>
+
+						</div>
+					</div>
+				</section>
+
+			
+
+		</div>
+
+<script>
+window.onload = isLoggedIn()
+
+function parseCookie()
+{
+	jwt = document.cookie.split('; ')
+  	.find(row => row.startsWith('auth'))
+  	.split('=')[1];
+
+  	return jwt;
+}
+
+function isLoggedIn()
+{
+	token = parseCookie();
+	if(token != null)
+	{
+		document.getElementById("reglink").href = "user-info.html"
+		document.getElementById("regText").textContent = "Your Account"
+
+		document.getElementById("loginLink").href = "buy-package.html"
+		document.getElementById("loginText").textContent = "Buy A Package"
+
+		document.getElementById("bioLink").href = "javascript:signOut()"
+		document.getElementById("bioText").textContent = "Sign Out"
+
+		document.getElementById("regButton").innerHtml = "<a href='user-info.html'>Your Account</a>";
+	}
+
+}
+
+function signOut()
+{
+	document.cookie = 'auth=' + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+	window.location.reload();
+}
+</script>
+<!-- Scripts -->
+<script src="assets/js/jquery.min.js"></script>
+<script src="assets/js/jquery.dropotron.min.js"></script>
+<script src="assets/js/browser.min.js"></script>
+<script src="assets/js/breakpoints.min.js"></script>
+<script src="assets/js/util.js"></script>
+<script src="assets/js/main.js"></script>
+
+	</body>
+</html>
