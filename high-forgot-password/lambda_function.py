@@ -3,6 +3,7 @@ from botocore.exceptions import ClientError
 import datetime
 import json
 import jwt
+import os
 from datetime import datetime, timedelta
 
 def lambda_handler(event, context):
@@ -17,8 +18,8 @@ def lambda_handler(event, context):
     json_data = json.loads(json_string)
     body = json.loads(json_data['body'])
     
-    username = body['username']
-    if not username:
+    email = body['email']
+    if not email:
         return {
             'statusCode': 422,
             'headers': 
@@ -27,12 +28,11 @@ def lambda_handler(event, context):
                 'Access-Control-Allow-Origin':  '*',
                 'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
              },
-            'body': json.dumps('Please enter a username')
+            'body': json.dumps('Please enter an email address')
         }
         
-    email = getUserEmail(username)
-    if not email:
-        print("no record found for " + username)
+    if not isValidEmail(email.lower().strip()):
+        print("no record found for " + email)
         return {
             'statusCode': 200,
             'headers': 
@@ -46,7 +46,7 @@ def lambda_handler(event, context):
     client = boto3.client('ses',region_name=AWS_REGION)
     token_json = json.loads(createJWT(username));
     token = token_json['token']
-    url = "https://anniecassiefit.net/reset-password.html?token=" + token
+    url = os.environ['url'] + token
 
     BODY_TEXT = ("A request was submitted to reset your Annie Cassie Fit password. If you submitted this request, please click the provided link to reset your password.")
     BODY_HTML = """<html><head></head><body>
@@ -58,10 +58,11 @@ def lambda_handler(event, context):
 
     try:
     #Provide the contents of the email.
+        print("sending email to " + email)
         response = client.send_email(
             Destination={
                 'ToAddresses': [
-                    email,
+                    email.lower(),
                 ],
             },
             Message={
@@ -85,7 +86,7 @@ def lambda_handler(event, context):
         # following line
         #ConfigurationSetName=CONFIGURATION_SET,
     )
-# Display an error if something goes wrong.	
+# Display an error if something goes wrong. 
     except ClientError as e:
         print(e.response['Error']['Message'])
     else:
@@ -117,22 +118,41 @@ def createJWT(username):
     jwt_token = jwt.encode(payload, JWT_SECRET, JWT_ALGORITHM)
     return json.dumps({'token': jwt_token.decode('utf-8')})
     
-def getUserEmail(username):
+def isValidEmail(useremail):
     print("in getUserEmail")
+    global username
     dynamodb = boto3.resource('dynamodb', region_name='us-east-2', endpoint_url="https://dynamodb.us-east-2.amazonaws.com")
     table = dynamodb.Table('HighUsers')
     
-    response = table.get_item(Key={'username': username})
-    if 'Item' not in response.keys():
-        print("user record not found")
-        return None
-    else:
-        print("found user!")
-        user_data_string = json.dumps(response['Item'])
-        user_data = json.loads(user_data_string)
+    scan_response = table.scan();
+    
+     #iterate and run the process for each user
+    for i in scan_response['Items']:
+        json_string = json.dumps(i)
+        json_data = json.loads(json_string)
         
-        dbEmail = user_data['email']
-        return dbEmail
+        dbUser = json_data['username']
+        email = json_data['email']
+        if(email.lower() == useremail):
+             print("found user " + dbUser)
+             username = dbUser
+             return True
+    
+    print('No record found for email ' + useremail)        
+    return False
+
+    
+  #  response = table.get_item(Key={'username': username})
+  #  if 'Item' not in response.keys():
+    #    print("user record not found")
+   #     return None
+    #else:
+  #      print("found user!")
+   #     user_data_string = json.dumps(response['Item'])
+   #     user_data = json.loads(user_data_string)
+   #     
+   #     dbEmail = user_data['email']
+   #     return dbEmail
 
     
 def get_secret(secret_name):

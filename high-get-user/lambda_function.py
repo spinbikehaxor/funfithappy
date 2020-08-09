@@ -46,6 +46,7 @@ def lambda_handler(event, context):
     json_string = json.dumps(event)
     json_data = json.loads(json_string)
     headers = json_data['headers']
+    found_user = False
 
     if 'x-api-key' not in headers.keys():
         return 
@@ -78,10 +79,53 @@ def lambda_handler(event, context):
     global dynamodb 
     dynamodb = boto3.resource('dynamodb', region_name='us-east-2', endpoint_url="https://dynamodb.us-east-2.amazonaws.com")
     table = dynamodb.Table('HighUsers')
-    response = table.get_item(Key={'username': username})
-    
-    if 'Item' not in response.keys():
-        print("no record found for " + username)
+    scan_response = table.scan();
+
+    for i in scan_response['Items']:
+        json_string = json.dumps(i)
+        json_data = json.loads(json_string)
+        
+        dbUser = json_data['username']
+
+        if(dbUser.lower().strip() == username.lower().strip()):
+            #default to inactive
+            isActiveForStream = False
+        
+            
+            dateSigned = getWaiver(json_data['username'], json_data['email'])
+            subscription_data = getPayPalSubscription(json_data['username'])
+            print(str(subscription_data))
+           
+            if(dateSigned and (subscription_data['subscription_status'])):
+                if(subscription_data['subscription_status'] == 'ACTIVE'):
+                    isActiveForStream = True
+            
+            user ={
+                'username': json_data['username'],
+                'fname': json_data['fname'],
+                'lname' : json_data['lname'],
+                'email': json_data['email'],
+                'phone': json_data['phone'],
+                'preferredContact': json_data['preferredContact'],
+                'waiverSignedDate': dateSigned,
+                'nextPayment': subscription_data['nextPayment'],
+                'isPaymentCurrent': subscription_data['subscription_status'],
+                'isActiveForStream': isActiveForStream }
+
+            return {
+                'statusCode': 200,
+                'headers': 
+                 {
+                    'Access-Control-Allow-Headers': '*',
+                    'Access-Control-Allow-Origin':  '*',
+                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
+                 },
+                'body': json.dumps(user)
+            }
+      
+        else:
+            continue
+            
         return {
             'statusCode': 400,
             'headers': 
@@ -90,63 +134,30 @@ def lambda_handler(event, context):
                 'Access-Control-Allow-Origin':  '*',
                 'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
              },
-            'body': json.dumps('No record found for " + username')
+            'body': json.dumps('No record found for ' + username)
         }
-    else:
 
-        #default to inactive
-        isActiveForStream = False
+
         
-        user_data_string = json.dumps(response['Item'])
-        user_data = json.loads(user_data_string)
-        
-        dateSigned = getWaiver(user_data['username'], user_data['email'])
-        subscription_data = getPayPalSubscription(user_data['username'])
-        print(str(subscription_data))
-       
-        if(dateSigned and (subscription_data['subscription_status'])):
-            if(subscription_data['subscription_status'] == 'ACTIVE'):
-                isActiveForStream = True
-        
-        user ={
-            'username': user_data['username'],
-            'fname': user_data['fname'],
-            'lname' : user_data['lname'],
-            'email': user_data['email'],
-            'phone': user_data['phone'],
-            'preferredContact': user_data['preferredContact'],
-            'waiverSignedDate': dateSigned,
-            'nextPayment': subscription_data['nextPayment'],
-            'isPaymentCurrent': subscription_data['subscription_status'],
-            'isActiveForStream': isActiveForStream }
-            
-        print(str(user))
-        return {
-            'statusCode': 200,
-            'headers': 
-             {
-                'Access-Control-Allow-Headers': '*',
-                'Access-Control-Allow-Origin':  '*',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
-             },
-            'body': json.dumps(user)
-        }
-      
 def getWaiver(username, email):
     table = dynamodb.Table('HighWaivers')
     print("looking up waiver for " + username)
-
-    response = table.get_item(Key={'username': username, 'email' : email})
-    if 'Item' not in response.keys():
-        print("no waiver found for " + username)
-        return None
-        
-    else:
-        waiver_data_string = json.dumps(response['Item'])
-        waiver_data = json.loads(waiver_data_string)
-        return waiver_data['date-signed']
     
-    print(response)
+    scan_response = table.scan();
+
+    for i in scan_response['Items']:
+        json_string = json.dumps(i)
+        json_data = json.loads(json_string)
+        
+        dbUser = json_data['username']
+        if(dbUser.lower().strip() == username.lower().strip()):
+            return json_data['date-signed']
+        else:
+            continue
+
+    print("no waiver found for " + username)
+    return None
+
         
 def getMostRecentPayment(username):
     table = dynamodb.Table('HighPayment')
@@ -179,50 +190,47 @@ def getMostRecentPayment(username):
     
 def getPayPalSubscription(username):
     table = dynamodb.Table('HighPayment')
-    response = table.query(
-        KeyConditionExpression=Key('username').eq(username)
-    )
-    if 'Items' not in response.keys():
-        print("no payment found in database for " + username)
-        data ={
-            'subscription_status': 'Inactive',
-            'nextPayment': 'No Payment Scheduled'
-        }
-        return data;
     
-    if(len(response['Items']) == 0 ):
-        print("no payment found in table for " + username)
-        data ={
-            'subscription_status': 'Inactive',
-            'nextPayment': 'No Payment Scheduled'
-        }
-        return data;
+    scan_response = table.scan();
+
+    for i in scan_response['Items']:
+        json_string = json.dumps(i)
+        json_data = json.loads(json_string)
+        dbUser = json_data['username']
+        if(dbUser.lower().strip() == username.lower().strip()):
+            subscription_id = json_data['paypal_subscription_id']
+            print("subscription_id = " + subscription_id)
+            
+            auth_token = login_to_paypal();
+            auth_token_param = "Bearer " + auth_token
+            
+            url = "https://api.paypal.com/v1/billing/subscriptions/" + subscription_id
+            headers = {'Content-Type': 'application/json', 'Authorization': auth_token_param }
+            
+            r= requests.get(url, headers=headers)
+            response_json = json.loads(r.text)
+            billing_string = json.dumps(response_json['billing_info'])
+            billing_data = json.loads(billing_string)
+            print("billing_data = " + str(billing_data))
+            
+            data ={
+                'subscription_status': response_json['status'],
+                'nextPayment': billing_data['next_billing_time']
+                }
+            
+            return data
+        else:
+            continue
         
-    payment_data_string = json.dumps(response['Items'])
         
-    for item in response['Items']:
-        subscription_id = item['paypal_subscription_id']
-        
-        auth_token = login_to_paypal();
-        auth_token_param = "Bearer " + auth_token
-        
-        url = "https://api.paypal.com/v1/billing/subscriptions/" + subscription_id
-        headers = {'Content-Type': 'application/json', 'Authorization': auth_token_param }
-        
-        r= requests.get(url, headers=headers)
-        response_json = json.loads(r.text)
-        billing_string = json.dumps(response_json['billing_info'])
-        billing_data = json.loads(billing_string)
-        
-        data ={
-            'subscription_status': response_json['status'],
-            'nextPayment': billing_data['next_billing_time']
-            }
-        
-        return data
-        
-      
-        
+    print("no payment found in database for " + username)
+    data ={
+        'subscription_status': 'Inactive',
+        'nextPayment': 'No Payment Scheduled'
+    }
+    return data;
+    
+
 def login_to_paypal():
     print('in login_to_paypal')
     paypal_client_id = "ARFAJ4v0DMU0-jp__jkVEVNYP139DlETKokloLrUywQ0qjlOs0H5x1ETIVDJARd3rBuCPJHGKWrdZ2fY"
