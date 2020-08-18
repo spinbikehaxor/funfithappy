@@ -20,7 +20,8 @@
 
 						<!-- Logo -->
 							<h1 id="logo"><a href="index.html">High Fitness</a></h1>
-							<p>Live and Streaming Classes</p>
+							<p><strong>Streaming Sundays, Tuesdays and Thursdays at 10am</strong></p>
+							<p><strong>Tuesdays and Thursdays at 6pm</strong></p>
 
 						<!-- Nav -->
 							<!-- Nav -->
@@ -44,11 +45,26 @@
 						<div id="content">
 
 							<!-- Post -->
-								<article class="box post">
-									<header>
-										<h2>Under Construction</h2>
-									</header>
-								</article>
+									<div>
+										<p>Aerobics is back! Bigger, better, HIGHer!
+Experience more than just a workout! HIGH fitness is simple, intense, consistent, inclusive and fun! HIGH gets participants addicted and coming back for more! HIGH takes old school aerobics to the next level with modern fitness techniques such as hiit training, plyometrics, intervals of strength and cardio, and more. You can go high or you can go low, but you will always leave feeling HIGH!
+										<p>
+											HIGH Fitness is an emerging leader in group fitness, inspiring people from all walks of life to a lifestyle of better health and overall wellness. HIGH transforms old school aerobics into a highly addictive new fitness experience that combines simple, modern fitness techniques (i.e. HIIT, plyometrics, etc.) with music you know and love. This results in a high energy, INTENSE and crazy fun workout that leaves participants feeling HIGH and wanting more. Our formula alternates between cardio peaks and toning tracks that will take your heart rate to the sky and strength to the next level. Beyond the workout, the HIGH fitness culture embodies a lifestyle of empowering people to maximize their health and be the best version of themselves.
+									<div id="scheduledTimes">
+										<p><strong>Current High Streaming Times are:</strong>
+											<ul>
+												<li>Sundays at 10am</li>
+												<li>Tuesdays at 10am and 6pm</li>
+												<li>Thursdays at 10am and 6pm</li>
+											</ul>
+										</p>
+									</div>
+									<div id="streamingFrame" style="display:none">
+										<!--<video id="video-player" playsinline></video>-->
+										<!--<iframe src="https://iframe.dacast.com/b/153287/c/526605" width="100%" height="700"></iframe>-->
+										<iframe id="highVideoLink" src="" width="100%" height="600" sandbox="allow-scripts allow-forms allow-same-origin allow-top-navigation" allowfullscreen></iframe>
+									</div>
+							
 
 						</div>
 					</div>
@@ -57,8 +73,10 @@
 			
 
 		</div>
-
+<!--<script src="https://player.live-video.net/1.0.0/amazon-ivs-player.min.js"></script> -->
 <script>
+
+
 window.onload = isLoggedIn()
 
 function parseCookie()
@@ -84,10 +102,79 @@ function isLoggedIn()
 		document.getElementById("bioLink").href = "javascript:signOut()"
 		document.getElementById("bioText").textContent = "Sign Out"
 
-		document.getElementById("regButton").innerHtml = "<a href='user-info.html'>Your Account</a>";
+		//document.getElementById("streamingFrame").style.display = "block"
+		getUserData()
+	}
+}
+
+function getUserData()
+{
+	var postRequest = new XMLHttpRequest()
+
+	postRequest.open('POST', 'https://zkhudp5vdk.execute-api.us-east-2.amazonaws.com/default/any', true)
+	postRequest.setRequestHeader('Content-type', 'application/json;charset=UTF-8');
+	postRequest.setRequestHeader('X-Api-Key', parseCookie())
+	//postRequest.withCredentials = true;
+	
+	postRequest.onload = function () 
+	{
+	  // Begin accessing JSON data here
+	  var responseData = JSON.parse(this.response)
+
+	  if (postRequest.status >= 200 && postRequest.status < 400) 
+	  {
+	  		json = JSON.parse(postRequest.responseText);
+			isActive = json.isActiveForStream;
+			if(isActive == true)
+			{
+				getGoogleLink()
+				setInterval(getGoogleLink, 60000);
+			}
+	  }
+	  
 	}
 
+	postRequest.send()
 }
+
+
+function getGoogleLink()
+{
+	var postRequest = new XMLHttpRequest()
+
+	postRequest.open('POST', 'https://ibabt28zng.execute-api.us-east-2.amazonaws.com/default/any', true)
+	postRequest.setRequestHeader('Content-type', 'application/json;charset=UTF-8');
+	
+	postRequest.onload = function () 
+	{
+	  // Begin accessing JSON data here
+	  var responseData = JSON.parse(this.response)
+
+	  if (postRequest.status >= 200 && postRequest.status < 400) 
+	  {
+	  		json = JSON.parse(postRequest.responseText);
+	  		if( json.url == null)
+	  		{
+	  			document.getElementById("highVideoLink").src = "";
+	  			document.getElementById("streamingFrame").style.display = "none"
+	  			return
+	  		}
+	  		if(document.getElementById("streamingFrame").style.display == "none")
+	  		{
+	  			document.getElementById("highVideoLink").src = json.url;
+				document.getElementById("streamingFrame").style.display = "block"
+				document.getElementById("scheduledTimes").style.display = "none"
+	  		}
+	  }
+	  else 
+	  {
+	  	//alert(postRequest.responseText)
+	  }
+	}
+
+	postRequest.send()
+}
+
 
 function signOut()
 {

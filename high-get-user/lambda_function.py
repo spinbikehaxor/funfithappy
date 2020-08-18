@@ -75,144 +75,151 @@ def lambda_handler(event, context):
              },
             'body': json.dumps('User authorization failed')
         }
-            
+    
+    formatted_username = username.lower().strip()
     global dynamodb 
     dynamodb = boto3.resource('dynamodb', region_name='us-east-2', endpoint_url="https://dynamodb.us-east-2.amazonaws.com")
-    table = dynamodb.Table('HighUsers')
-    scan_response = table.scan();
+    table = dynamodb.Table('SiteUsers')
+    
+    query_response = table.query(
+		KeyConditionExpression=Key('username').eq(formatted_username)
+	)
+    #scan_response = table.scan();
 
-    for i in scan_response['Items']:
+    for i in query_response['Items']:
         json_string = json.dumps(i)
         json_data = json.loads(json_string)
         
         dbUser = json_data['username']
+        isActiveForStream = False
 
-        if(dbUser.lower().strip() == username.lower().strip()):
-            #default to inactive
-            isActiveForStream = False
+        dateSigned = getWaiver(formatted_username)
+        subscription_data = getPayPalSubscription(json_data['username'])
+        print(str(subscription_data))
+       
+        if(dateSigned and (subscription_data['subscription_status'])):
+            if(subscription_data['subscription_status'] == 'ACTIVE'):
+                isActiveForStream = True
         
-            
-            dateSigned = getWaiver(json_data['username'], json_data['email'])
-            subscription_data = getPayPalSubscription(json_data['username'])
-            print(str(subscription_data))
-           
-            if(dateSigned and (subscription_data['subscription_status'])):
-                if(subscription_data['subscription_status'] == 'ACTIVE'):
-                    isActiveForStream = True
-            
-            user ={
-                'username': json_data['username'],
-                'fname': json_data['fname'],
-                'lname' : json_data['lname'],
-                'email': json_data['email'],
-                'phone': json_data['phone'],
-                'preferredContact': json_data['preferredContact'],
-                'waiverSignedDate': dateSigned,
-                'nextPayment': subscription_data['nextPayment'],
-                'isPaymentCurrent': subscription_data['subscription_status'],
-                'isActiveForStream': isActiveForStream }
+        user ={
+            'username': json_data['username'],
+            'fname': json_data['fname'],
+            'lname' : json_data['lname'],
+            'email': json_data['email'],
+            'phone': json_data['phone'],
+            'preferredContact': json_data['preferredContact'],
+            'waiverSignedDate': dateSigned,
+            'nextPayment': subscription_data['nextPayment'],
+            'isPaymentCurrent': subscription_data['subscription_status'],
+            'isActiveForStream': isActiveForStream }
 
-            return {
-                'statusCode': 200,
-                'headers': 
-                 {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin':  '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
-                 },
-                'body': json.dumps(user)
-            }
-      
-        else:
-            continue
-            
         return {
-            'statusCode': 400,
+            'statusCode': 200,
             'headers': 
              {
                 'Access-Control-Allow-Headers': '*',
                 'Access-Control-Allow-Origin':  '*',
                 'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
              },
-            'body': json.dumps('No record found for ' + username)
+            'body': json.dumps(user)
         }
+      
+    return {
+        'statusCode': 400,
+        'headers': 
+         {
+            'Access-Control-Allow-Headers': '*',
+            'Access-Control-Allow-Origin':  '*',
+            'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
+         },
+        'body': json.dumps('No record found for ' + username)
+    }
 
 
         
-def getWaiver(username, email):
-    table = dynamodb.Table('HighWaivers')
+def getWaiver(username):
+    table = dynamodb.Table('HighWaiver')
     print("looking up waiver for " + username)
     
-    scan_response = table.scan();
-
-    for i in scan_response['Items']:
+    query_response = table.query(
+		KeyConditionExpression=Key('username').eq(username)
+	)
+    for i in query_response['Items']:
         json_string = json.dumps(i)
         json_data = json.loads(json_string)
-        
-        dbUser = json_data['username']
-        if(dbUser.lower().strip() == username.lower().strip()):
-            return json_data['date-signed']
-        else:
-            continue
+        print(str(json_data))
+
+        return json_data['date-signed']
 
     print("no waiver found for " + username)
     return None
 
         
-def getMostRecentPayment(username):
-    table = dynamodb.Table('HighPayment')
-    mostRecentPayment = datetime.now() - timedelta(days=365)
-    
-    response = table.query(
-        KeyConditionExpression=Key('username').eq(username)
-    )
 
-    if 'Items' not in response.keys():
-        print("no payment found for " + username)
-        return None
-    
-    if(len(response['Items']) == 0 ):
-        print("no payment found for " + username)
-        return None
-    
-    payment_data_string = json.dumps(response['Items'])
-    for item in response['Items']:
-        try:
-            transactionString = item['transaction-date'].split('T')
-            transactionDate = datetime.strptime(transactionString[0], '%Y-%m-%d')
-        except ValueError as ve:
-            print("Date string not in expected format")
-            
-        if(transactionDate > mostRecentPayment):
-            mostRecentPayment = transactionDate
-            
-    return mostRecentPayment
     
 def getPayPalSubscription(username):
+    #Format username to look for lower case so can do faster query.
+    query_username = username.lower().strip()
     table = dynamodb.Table('HighPayment')
-    
-    scan_response = table.scan();
-
-    for i in scan_response['Items']:
+    query_response = table.query(
+		KeyConditionExpression=Key('username').eq(query_username)
+	)
+	
+    for i in query_response['Items']:
         json_string = json.dumps(i)
         json_data = json.loads(json_string)
         dbUser = json_data['username']
-        if(dbUser.lower().strip() == username.lower().strip()):
-            subscription_id = json_data['paypal_subscription_id']
-            print("subscription_id = " + subscription_id)
+        transaction_date = json_data['transaction-date']
+        subscription_id = json_data['paypal_subscription_id']
+        next_billing_time = json_data['next_billing_time']
+        nextBillingSplit = next_billing_time.split('T')
+        next_billing_date = nextBillingSplit[0]
+        status = json_data['status']
+        
+        nextBillingDate = datetime.strptime(next_billing_date, '%Y-%m-%d')
+        print("nextBillingDate formatted as date = " + str(nextBillingDate))
+        
+        #No need to call PayPal- we're good until the nextBillingDate
+        if(status == "ACTIVE" and nextBillingDate >= datetime.now()):
+          
+            data ={
+                'subscription_status': status,
+                'nextPayment': next_billing_date
+                }
             
+            return data
+        elif(status == "ACTIVE" and nextBillingDate < datetime.now()):
+            print("Looking up next billing date")
             auth_token = login_to_paypal();
             auth_token_param = "Bearer " + auth_token
             
             url = "https://api.paypal.com/v1/billing/subscriptions/" + subscription_id
             headers = {'Content-Type': 'application/json', 'Authorization': auth_token_param }
             
+            print("calling paypal for subscription details")
             r= requests.get(url, headers=headers)
             response_json = json.loads(r.text)
             billing_string = json.dumps(response_json['billing_info'])
             billing_data = json.loads(billing_string)
             print("billing_data = " + str(billing_data))
             
+
+            update_response = table.update_item(
+                Key={
+                'username': query_username,
+                'transaction-date': transaction_date
+                },
+                UpdateExpression="set #status=:s, next_billing_time=:n",
+                ExpressionAttributeValues={
+                    ':s': response_json['status'],
+                    ':n': billing_data['next_billing_time']
+                },
+                ExpressionAttributeNames =  {
+                    '#status': 'status'
+                },
+                ReturnValues="UPDATED_NEW"
+            )
+
             data ={
                 'subscription_status': response_json['status'],
                 'nextPayment': billing_data['next_billing_time']
@@ -238,6 +245,11 @@ def login_to_paypal():
     secretString = json.dumps(get_secret('PaypalSecret'))
     secretData = json.loads(secretString)
     paypalSecret = secretData['PaypalSecret']
+    
+    print("calling test")
+    testurl = 'https://www.google.com'
+    tr = requests.get(testurl)
+    print(str(tr))
     
     url = "https://api.paypal.com/v1/oauth2/token"
     payload= {'grant_type': 'client_credentials'}
@@ -298,3 +310,4 @@ def get_secret(secret_name):
             decoded_binary_secret = base64.b64decode(get_secret_value_response['SecretBinary'])
             return json.loads(decoded_binary_secret)
     
+

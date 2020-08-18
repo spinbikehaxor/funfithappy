@@ -90,11 +90,12 @@ def lambda_handler(event, context):
         
         
     dynamodb = boto3.resource('dynamodb', region_name='us-east-2', endpoint_url="https://dynamodb.us-east-2.amazonaws.com")
-    table = dynamodb.Table('HighUsers')
+    table = dynamodb.Table('SiteUsers')
     
+    formatted_username = username.lower()
     response = table.update_item(
         Key={
-            'username': username
+            'username': formatted_username
         },
         UpdateExpression="set password=:p",
         ExpressionAttributeValues={

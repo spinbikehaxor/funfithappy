@@ -144,11 +144,13 @@ def lambda_handler(event, context):
         
     print("saving to DB")
     dynamodb = boto3.resource('dynamodb', region_name='us-east-2', endpoint_url="https://dynamodb.us-east-2.amazonaws.com")
-    table = dynamodb.Table('HighUsers')
+    table = dynamodb.Table('SiteUsers')
+
+    formatted_username = username.lower().strip()
     
     response = table.put_item(
         Item={
-            'username': html.escape(username.strip()),
+            'username': html.escape(formatted_username),
             'password': passHash,
             'fname': html.escape(fname.strip()),
             'lname' : html.escape(lname.strip()),

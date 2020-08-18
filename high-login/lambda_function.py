@@ -8,6 +8,7 @@ import jwt
 import os
 import requests
 import uuid
+from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
 from datetime import datetime, timedelta
 
@@ -31,7 +32,7 @@ def lambda_handler(event, context):
              'body': json.dumps("No username submitted")
         }
     else:
-        username = body['username'].strip()
+        username = body['username'].strip().lower()
         password = body['password'].strip()
         if isValidLogin(username, password):
             authToken = createJWT(username);
@@ -61,16 +62,15 @@ def lambda_handler(event, context):
 def isValidLogin(username, password):
     print ("in isValidLogin")
     dynamodb = boto3.resource('dynamodb', region_name='us-east-2', endpoint_url="https://dynamodb.us-east-2.amazonaws.com")
-    table = dynamodb.Table('HighUsers')
+    table = dynamodb.Table('SiteUsers')
     
-    scan_response = table.scan();
-    for i in scan_response['Items']:
+    query_response = table.query(
+        KeyConditionExpression=Key('username').eq(username)
+    )
+    
+    for i in query_response['Items']:
         json_string = json.dumps(i)
         json_data = json.loads(json_string)
-        
-        dbuser = json_data['username']
-        if(dbuser != username):
-            continue
         
         print("found user " + username)
         storedHash = json_data['password']

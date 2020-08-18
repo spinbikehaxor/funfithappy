@@ -128,11 +128,12 @@ def lambda_handler(event, context):
         }
     
     dynamodb = boto3.resource('dynamodb', region_name='us-east-2', endpoint_url="https://dynamodb.us-east-2.amazonaws.com")
-    table = dynamodb.Table('HighWaivers')
+    table = dynamodb.Table('HighWaiver')
     
+    formatted_username = username.lower().strip()
     response = table.put_item(
         Item={
-            'username': username,
+            'username': formatted_username,
             'email': html.escape(body['email']),
             'fname': html.escape(body['fname']),
             'lname' : html.escape(body['lname']),

@@ -5,6 +5,7 @@ import json
 import jwt
 
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 
 def isAuthorized(jwt_token):
@@ -65,6 +66,7 @@ def lambda_handler(event, context):
             'body': json.dumps('User is not logged in')
         }
     print("username = " + username)
+    usernameformatted = username.lower().strip()
     body = json.loads(json_data['body'])
     
     print("keys = " + str(body.keys()))
@@ -109,12 +111,24 @@ def lambda_handler(event, context):
         dynamodb = boto3.resource('dynamodb', region_name='us-east-2', endpoint_url="https://dynamodb.us-east-2.amazonaws.com")
         table = dynamodb.Table('HighPayment')
         
+        next_billing_date = datetime.today()+ relativedelta(months=1)
+        next_billing_date_string = str(next_billing_date)
+        next_billing_date_split = next_billing_date_string.split(" ")
+        next_billing_date_prefix = next_billing_date_split[0]
+        next_billing_date_paypal_mimic = next_billing_date_prefix + "T"
+        
+        #nextBillingDateString = datetime.strptime(str(next_billing_date), '%Y-%m-%d')
+        print(next_billing_date_paypal_mimic)
+        
         response = table.put_item(
             Item={
                 'transaction-date': transaction_date,
-                'username': username,
+                'username': usernameformatted,
                 'paypal_subscription_id': paypal_subscription_id,
                 'paypal_order_id' : paypal_order_id,
+                'status': 'ACTIVE',
+                'next_billing_time': str(next_billing_date_paypal_mimic)
+                
        #         'paypal-transaction-status': paypal_transaction_status,
       #          'amount-paid': amount_paid,
        #         'paypal-details': body
