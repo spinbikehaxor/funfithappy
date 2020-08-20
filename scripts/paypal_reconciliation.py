@@ -1,7 +1,11 @@
 import boto3
+import datetime
 import json
 import logging
 import requests
+from boto3.dynamodb.conditions import Attr
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 from requests.auth import HTTPBasicAuth
 from botocore.exceptions import ClientError
 
@@ -21,7 +25,8 @@ def main():
 
     authtoken = login_to_paypal()
     logger.debug("got token - ready to go!")
-    reconcileSubscriptions(authtoken)
+    reconcileSubscriptions(authtoken)  #Update existing Dynamo Records
+    checkForMissingPayments(authtoken) #Check for any new subscriptions not captured due to client errors
 
 def reconcileSubscriptions(authtoken):
     global dynamodb
@@ -79,6 +84,117 @@ def reconcileSubscriptions(authtoken):
             logger.info("Local status = " + dbStatus + " paypal_status = " + paypal_status )
             logger.info("Local billing = " + next_billing_time + " paypal billing = " + paypal_next_billing_time )
             updateLocalRecord(dbUser, transaction_date, paypal_status, paypal_next_billing_time)
+
+#If someone closes their paypal window or things go wonky with their Javascript...
+def checkForMissingPayments(authtoken):
+
+    dynamodb = boto3.resource('dynamodb', region_name='us-east-2', endpoint_url="https://dynamodb.us-east-2.amazonaws.com")
+    table = dynamodb.Table('HighPayment')
+
+    #We're going to look for all new transactions in the last 24 hours
+    logger.debug("in checkForMissingPayments")
+    end_date = datetime.now()
+    end_date_string = end_date.strftime("%Y-%m-%d" + "T" + "%H:%M:%S" + "Z")
+    start_date = end_date - relativedelta(days=1)
+    start_date_string = start_date.strftime("%Y-%m-%d" + "T" + "%H:%M:%S" + "Z")
+
+    #Prep and fire off the REST request to Paypal
+    baseurl = "https://api.paypal.com/v1/reporting/transactions"
+    finalurl = baseurl + "?start_date=" + start_date_string +"&end_date=" + end_date_string
+    logger.debug("finalurl = " + finalurl)
+    headers = {'Content-Type': 'application/json', 'Authorization': authtoken }
+    r= requests.get(finalurl, headers=headers)
+    response_json = json.loads(r.text)
+
+    
+    #Iterate through all transactions from last 24 hours
+    for i in response_json['transaction_details']:
+        transaction = i['transaction_info']
+        transaction_type = transaction['paypal_reference_id_type']
+
+        #Right now we're only concerned with subscriptions... this will change
+        if(transaction_type == "SUB"): 
+            subscription_id = transaction['paypal_reference_id']
+            logger.debug("looking for sub " + subscription_id)
+
+            #Query dynamo to see if we captured this subscription
+            scan_response = table.scan(
+                FilterExpression=Attr('paypal_subscription_id').eq(subscription_id)
+                )
+            if(len(scan_response) > 0):
+                logger.debug("found " + subscription_id)
+                continue #We've got this one - yay!
+            
+            #If missing, email your damn self to fix this shit! Can't just insert because the name/email might not match
+            else: 
+               sendEmail(subscription_id)
+
+
+def sendEmail(subscription_id):
+    
+    SENDER = "anniecassiehigh@gmail.com"
+    AWS_REGION = "us-east-2"
+    SUBJECT = "Missing Payment!"
+    CHARSET = "UTF-8"
+
+    BODY_TEXT = ("Missing Payment! Reconcile subscription " + subscription_id)
+    BODY_HTML = """<html><head></head><body>
+  <h1>Missing Payment!</h1>
+  <p>Reconcile subscription """ + subscription_id + """</p> 
+</body></html>
+ """
+    email = ["dlmca@yahoo.com", "spinbikehaxor@gmail.com", "anniecassiehigh@gmail.com"]
+    client = boto3.client('ses',region_name=AWS_REGION)
+
+
+    try:
+    #Provide the contents of the email.
+        logger.debug("sending email to " + str(email))
+        response = client.send_email(
+            Destination={
+                'ToAddresses': 
+                     email
+                ,
+            },
+            Message={
+                'Body': {
+                    'Html': {
+                        'Charset': CHARSET,
+                        'Data': BODY_HTML,
+                        },
+                    'Text': {
+                        'Charset': CHARSET,
+                        'Data': BODY_TEXT,
+                    },
+                },
+                'Subject': {
+                    'Charset': CHARSET,
+                    'Data': SUBJECT,
+                },
+            },
+            Source=SENDER,
+        # If you are not using a configuration set, comment or delete the
+        # following line
+        #ConfigurationSetName=CONFIGURATION_SET,
+    )
+# Display an error if something goes wrong. 
+    except ClientError as e:
+        print(e.response['Error']['Message'])
+    else:
+        print("Email sent! Message ID:"),
+        print(response['MessageId'])
+    
+    return {
+        'statusCode': 200,
+        'headers': {
+            'Access-Control-Allow-Headers': '*',
+            'Access-Control-Allow-Origin':  '*',
+            'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
+        },
+        'body': json.dumps('Forgot Password Email Sent!')
+    }
+
+    
 
 
 def updateLocalRecord(username, transaction_date, status, next_billing_time):
