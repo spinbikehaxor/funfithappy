@@ -30,7 +30,7 @@
 						<!-- Nav -->
 							<nav id="nav">
 								<ul>
-									<li><a class="icon solid fa-home" href="index.html"><span>Home</span></a></li>
+									<li><a class="icon solid fa-home" href="home.html"><span>Home</span></a></li>
 									<li><a class="icon solid fa-sitemap" href="user-info.html"><span>Your Account</span></a></li>
 									<li><a class="icon solid fa-sitemap" href="buy-package.html"><span>Buy A Package</span></a></li>
 									<li>
@@ -112,6 +112,11 @@ function parseCookie()
 
 function getSubscriptionStatus()
 {
+	if (document.cookie.length == 0)
+	{
+		window.location.replace("sign-in.html")
+	}
+	
 	var postRequest = new XMLHttpRequest()
 
 	postRequest.open('POST', 'https://zkhudp5vdk.execute-api.us-east-2.amazonaws.com/default/any', true)

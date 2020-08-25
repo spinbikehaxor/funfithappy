@@ -1,0 +1,365 @@
+<!DOCTYPE HTML>
+<!--
+	Strongly Typed by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+	<head>
+		<title>Administration</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<script src="https://www.google.com/recaptcha/api.js"></script>
+	</head>
+	<body class="no-sidebar is-preload">
+		<div id="page-wrapper">
+
+			<!-- Header -->
+				<section id="header">
+					<div class="container">
+
+						<!-- Logo -->
+							<h1 id="logo"><a href="index.html"></a>Annie Cassie Fit</h1>
+							<p>Administration</p>
+
+						<!-- Nav -->
+							<nav id="nav">
+								<ul>
+									<li><a class="icon solid fa-home" href="home.html"><span>Home</span></a></li>
+									<li><a class="icon solid fa-sitemap" href="user-info.html"><span>Your Account</span></a></li>
+									<li><a class="icon solid fa-sitemap" href="admin.html"><span>Administration</span></a></li>
+									<li>
+										<a href="#" class="icon fa-chart-bar"><span>High Fitness</span></a>
+										<ul>
+											<li><a href="high-live-list.html">Book a Live Class</a></li>
+											<li><a href="high-fitness.html">Online Streaming</a></li>
+										</ul>
+									</li>
+									<li><a class="icon solid fa-retweet" href="boot-camp.html"><span>Boot Camp</span></a></li>
+									<li><a class="icon solid fa-sitemap" href="javascript:signOut()"><span>Sign Out</span></a></li>
+								</ul>
+							</nav>
+
+					</div>
+				</section>
+
+			<!-- Main -->
+				<section id="main">
+					<div class="container">
+						<div class="row">
+			
+								<section>
+									<h3> Upcoming Classes </h3>
+											<table id="classlist">
+											   <tr>
+											      <th>Date</th>
+											      <th>Time</th>
+											      <th>Location</th>
+											      <th>Spots Taken</th>
+											      <th></th>
+											   </tr>
+									
+											</table>
+									<div id="rosterdiv" style="display:none">
+										<h3> Class Roster </h3>
+										</div>			
+								</section>
+								
+					
+						</div>
+						<div class="row">
+							<div class="col-6 col-12-medium">
+								<section>
+									<h3>Add New Location</h3>
+									<form id="addLocation">
+										<div class="row gtr-50">
+											<div class="col-6 col-12-small">
+												<input name="loc-id" id="loc-id" placeholder="Location ID (i.e. PHMS)" type="text" />
+											</div>
+											<div class="col-6 col-12-small">
+												<input name="address" id="address" placeholder="Address" type="text" />
+											</div>
+											<div class="col-6 col-12-small">
+												<input name="capacity" id="capacity" placeholder="Capacity" type="text" />
+											</div>
+											<div class="col-6 col-12-small">
+												<input name="display-name" id="display-name" placeholder="Display Name" type="text" />
+											</div>
+											<div class="col-12">
+												<a href="javascript:postLocation()" class="form-button-submit button icon solid fa-envelope">Submit</a>
+											</div>
+	
+										</div>
+									</form>
+									<p>
+									<h3>Add Live Class</h3>
+									<form id="addClass">
+										<div class="row gtr-50">
+											<div class="col-6 col-12-small">
+												<input name="classdate" id="newclassdate" placeholder="Class Date (2020-08-20)" type="text" />
+											</div>
+											<div class="col-6 col-12-small">
+												<select name="location" id="classlocation" placeholder="Location"/>
+												<option value="placeholder" disabled selected>Pick Location</option>
+											</div>
+											<div class="col-6 col-12-small">
+												<input name="classtime" id="newclasstime" placeholder="Class Time (i.e. 17:00)" type="text" />
+											</div>
+											<div class="col-12">
+												<a href="javascript:postLiveCLass()" class="form-button-submit button icon solid fa-envelope">Submit</a>
+											</div>
+	
+										</div>
+									</form>
+								</section>
+							</div>
+					</div>
+				</section>
+
+			<!-- Footer -->
+				
+					<div id="copyright" class="container">
+						<ul class="links">
+							<li>&copy; Annie Cassie Fit. All rights reserved.</li><li>Design: <a href="http://html5up.net">HTML5 UP</a></li>
+						</ul>
+					</div>
+				</section>
+
+		</div>
+
+		<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/jquery.dropotron.min.js"></script>
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+
+<script>
+window.onload= getAdminData()
+
+async function processRequest()
+{
+	const data = await sendRequest();
+	alert("processrequest data: " + data);
+}
+
+function parseCookie()
+{
+	jwt = document.cookie.split('; ')
+  	.find(row => row.startsWith('auth'))
+  	.split('=')[1];
+
+  	return jwt;
+}
+
+function getAdminData()
+{
+	//Check if logged in
+	if(document.cookie.length == 0)
+	{
+		window.location.replace("sign-in.html")
+	}
+
+	var postRequest = new XMLHttpRequest()
+	postRequest.open('POST', 'https://iqtl1ffmkd.execute-api.us-east-2.amazonaws.com/default/any', true)
+	postRequest.setRequestHeader('Content-type', 'application/json;charset=UTF-8');
+	postRequest.setRequestHeader('X-Api-Key', parseCookie())
+
+	postRequest.onload = function () 
+	{
+	  // Begin accessing JSON data here
+	  var responseData = JSON.parse(this.response)
+
+	  if (postRequest.status >= 200 && postRequest.status < 400) 
+	  {
+	  		//alert("success! " + postRequest.responseText)
+	  		populatePage(postRequest.responseText)
+	  		//window.location.replace("../index.html")
+	  }
+	  else if(postRequest.status == 401)
+	  {
+	  		window.location.replace("home.html")
+	  }
+	  else 
+	  {
+	  	alert(postRequest.responseText)
+	  }
+	}
+	postRequest.send()
+}
+
+function populatePage(requestData)
+{
+	json = JSON.parse(requestData);
+	locations = json.locations;
+	classes = json.classes;
+
+	//populate the locations
+	var locSelect = document.getElementById("classlocation")
+	for (var i = 0, l = locations.length; i < l; i++) 
+	{
+		var opt = document.createElement('option');
+		opt.id = locations[i].locId
+    	opt.value = locations[i].locId
+    	opt.innerHTML = locations[i].display_name;
+    	locSelect.appendChild(opt);
+	}
+
+	//Populate the classlist
+	var table = document.getElementById("classlist");
+	for (var i = 0, l = classes.length; i < l; i++) 
+	{		
+		var obj = classes[i];
+		classdate = obj.class_date
+		
+		time = obj.class_time
+		spots_taken = obj.spots_taken
+		class_location = obj.location
+		roster = obj.roster;
+
+		var classDiv = document.createElement("div")
+		classDiv.id = classdate + "Div"
+		classDiv.name = classdate + "Div"
+		classDiv.style = "display:none"
+
+		var header = document.createElement("h3") 
+		header.innerText = classdate
+		var tbl = document.createElement("table");
+		tbl.id = classdate
+		rosterheader = tbl.insertRow(0)
+		rosterheader.insertCell(0).innerHTML = "Username";
+		rosterheader.insertCell(1).innerHTML = "Spot Number";
+		rosterheader.insertCell(2).innerHTML = "Waitlist Number";
+
+		for (var k = 0, m = roster.length; k < m; k++) 
+		{	
+			var signup = roster[k];
+			rosterrow = tbl.insertRow(k +1)
+
+			rosterrow.insertCell(0).innerHTML = signup['username'];
+			rosterrow.insertCell(1).innerHTML = signup['spot_number'];
+			rosterrow.insertCell(2).innerHTML = signup['waitlist_number'];
+		}
+
+		classDiv.appendChild(header)
+		classDiv.appendChild(tbl)
+		document.getElementById('rosterdiv').appendChild(classDiv)
+		//document.getElementById('rosterdiv').appendChild(tbl)
+
+		row = table.insertRow(i +1)
+		row.insertCell(0).innerHTML = classdate;
+		row.insertCell(1).innerHTML = time;
+		row.insertCell(2).innerHTML = class_location;
+		row.insertCell(3).innerHTML = spots_taken;
+		row.insertCell(4).innerHTML = "<button type='button' id='" + classdate +"Button' onclick='viewRoster(this)'>View Class Roster</button>";
+	}
+}
+
+function viewRoster(classbutton)
+{	
+	classdate = classbutton.id
+	classdatesplit = classdate.split("B")
+	divId = classdatesplit[0]+"Div"
+
+	if(classbutton.innerText == "HIDE CLASS ROSTER")
+	{
+		classbutton.innerText = "VIEW CLASS ROSTER"
+		document.getElementById(divId).style.display = "none"
+		document.getElementById('rosterdiv').style.display = "none"
+	}
+	else
+	{
+		classbutton.innerText = "HIDE CLASS ROSTER"
+		document.getElementById('rosterdiv').style.display = "block"
+		document.getElementById(divId).style.display = "block"
+	}
+		
+}
+
+function postLiveCLass()
+{
+	var postRequest = new XMLHttpRequest()
+
+	var data = {
+  		"class_date"		: document.getElementById('newclassdate').value,
+  		"class_time"		: document.getElementById('newclasstime').value,
+  		"location"			: document.getElementById('classlocation').value
+	};
+
+	postRequest.open('POST', 'https://716b9237t4.execute-api.us-east-2.amazonaws.com/default/any', true)
+	postRequest.setRequestHeader('Content-type', 'application/json;charset=UTF-8');
+	postRequest.setRequestHeader('X-Api-Key', parseCookie())
+	
+	postRequest.onload = function () 
+	{
+	  // Begin accessing JSON data here
+	  var responseData = JSON.parse(this.response)
+
+	  if (postRequest.status >= 200 && postRequest.status < 400) 
+	  {
+	  		alert("Class Saved!")
+	  		window.location.reload()
+	  }
+	  else 
+	  {
+	  	alert(postRequest.responseText)
+	  }
+	}
+
+	postRequest.send(JSON.stringify(data))
+}
+
+	
+
+function postLocation()
+{
+	var postRequest = new XMLHttpRequest()
+
+	var data = {
+  		"id"				: document.getElementById('loc-id').value,
+  		"address"			: document.getElementById('address').value,
+  		"capacity"			: document.getElementById('capacity').value,
+  		"display-name"		: document.getElementById('display-name').value
+	};
+
+	postRequest.open('POST', 'https://kxqlffj68k.execute-api.us-east-2.amazonaws.com/default/any', true)
+	postRequest.setRequestHeader('Content-type', 'application/json;charset=UTF-8');
+	postRequest.setRequestHeader('X-Api-Key', parseCookie())
+	
+	postRequest.onload = function () 
+	{
+	  // Begin accessing JSON data here
+	  var responseData = JSON.parse(this.response)
+
+	  if (postRequest.status >= 200 && postRequest.status < 400) 
+	  {
+	  		alert("Location Saved!")
+	  		window.location.reload()
+	  }
+	  else 
+	  {
+	  	alert(postRequest.responseText)
+	  }
+	}
+
+	postRequest.send(JSON.stringify(data))
+}
+
+
+
+   function onSubmit(token) {
+     javascript:xmlRequest()
+   }
+
+function signOut()
+{
+	document.cookie = 'auth=' + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+	window.location.replace("index.html");
+}
+
+</script>
+
+	</body>
+</html>

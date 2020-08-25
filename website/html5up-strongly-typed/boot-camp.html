@@ -24,36 +24,22 @@
 
 						<!-- Nav -->
 							<!-- Nav -->
-						<div id="logged-out-nav">
-							<nav id="nav">
+						<nav id="nav">
 								<ul>
-									<li><a class="icon solid fa-home" href="index.html"><span>Home</span></a></li>
-									<li><a class="icon solid fa-sitemap" id=reglink href="registration.html"><span id="regText">Create Your Account</span></a></li>
-									<li><a class="icon solid fa-sitemap" id="loginLink" href="sign-in.html"><span id="loginText">Sign In</span></a></li>
-									<li><a id="high-top-menu" href="high-fitness.html" class="icon fa-chart-bar"><span>High Fitness</span></a></li>
-									<li><a class="icon solid fa-retweet" href="boot-camp.html"><span>Boot Camp</span></a></li>
-									<li><a class="icon solid fa-sitemap" id="bioLink" href="high-fitness.html"><span id="bioText">About Annie & Cassie</span></a></li>
-								</ul>
-							</nav>
-						</div>
-						<div id="logged-in-nav" style="display:none">
-							<nav id="nav">
-								<ul>
-									<li><a class="icon solid fa-home" href="index.html"><span>Home</span></a></li>
-									<li><a class="icon solid fa-sitemap" id=reglink href="user-info.html"><span id="regText">Your Account</span></a></li>
-									<li><a class="icon solid fa-sitemap" id="loginLink" href="buy-package.html"><span id="loginText">Buy A Package</span></a></li>
+									<li><a class="icon solid fa-home" href="home.html"><span>Home</span></a></li>
+									<li><a class="icon solid fa-sitemap" href="user-info.html"><span>Your Account</span></a></li>
+									<li><a class="icon solid fa-sitemap" href="buy-package.html"><span>Buy A Package</span></a></li>
 									<li>
-										<a id="high-top-menu" href="high-fitness.html" class="icon fa-chart-bar"><span>High Fitness</span></a>
-											<ul>
-												<li id="book-class"><a href="high-live-list.html" >Book a Live Class</a></li>
-												<li id="streaming"><a href="high-fitness.html">Online Streaming</a></li>
-											</ul>
+										<a href="#" class="icon fa-chart-bar"><span>High Fitness</span></a>
+										<ul>
+											<li><a href="high-live-list.html">Book a Live Class</a></li>
+											<li><a href="high-fitness.html">Online Streaming</a></li>
+										</ul>
 									</li>
 									<li><a class="icon solid fa-retweet" href="boot-camp.html"><span>Boot Camp</span></a></li>
-									<li><a class="icon solid fa-sitemap" id="bioLink" href="javascript:signOut()"><span id="bioText">Sign Out</span></a></li>
+									<li><a class="icon solid fa-sitemap" href="javascript:signOut()"><span>Sign Out</span></a></li>
 								</ul>
 							</nav>
-						</div>
 
 					</div>
 				</section>
@@ -151,31 +137,19 @@ function getVideoLinks()
 	  document.getElementById("status").textContent="Classes On Demand"
 	}
 
-	
-
-
-
-
-
 function isLoggedIn()
 {
-	token = parseCookie();
-	if(token != null)
+	if (document.cookie.length == 0)
 	{
-		/*document.getElementById("status").textContent="Page Loading... Please Wait"
-		document.getElementById("reglink").href = "user-info.html"
-		document.getElementById("regText").textContent = "Your Account"
-
-		document.getElementById("loginLink").href = "buy-package.html"
-		document.getElementById("loginText").textContent = "Buy A Package"
-
-		document.getElementById("bioLink").href = "javascript:signOut()"
-		document.getElementById("bioText").textContent = "Sign Out"*/
-
-		document.getElementById("logged-in-nav").style.display = "block"
-		document.getElementById("logged-out-nav").style.display = "none"
-
-		getUserData();
+		window.location.replace("sign-in.html")
+	}
+	else
+	{
+		token = parseCookie();
+		if(token != null)
+		{
+			getUserData();
+		}
 	}
 
 }

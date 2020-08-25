@@ -25,7 +25,7 @@
 						<!-- Nav -->
 							<nav id="nav">
 								<ul>
-									<li><a class="icon solid fa-home" href="index.html"><span>Home</span></a></li>
+									<li><a class="icon solid fa-home" href="home.html"><span>Home</span></a></li>
 									<li><a class="icon solid fa-sitemap" href="user-info.html"><span>Your Account</span></a></li>
 									<li><a class="icon solid fa-sitemap" href="buy-package.html"><span>Buy A Package</span></a></li>
 									<li>
@@ -97,6 +97,11 @@ function parseCookie()
 
 function getClassData()
 {
+	if (document.cookie.length == 0)
+	{
+		window.location.replace("sign-in.html")
+	}
+	
 	var postRequest = new XMLHttpRequest()
 
 	postRequest.open('POST', 'https://pnbd593pod.execute-api.us-east-2.amazonaws.com/default/any', true)
@@ -122,6 +127,7 @@ function getClassData()
     			display_name = obj.display_name
     			reserved = obj.reserved
     			spots_taken = obj.spots_taken
+    			waitspot = obj.waitSpot
 
     			remaining_spots = capacity - spots_taken
     			if(remaining_spots < 0)
@@ -142,7 +148,7 @@ function getClassData()
     			}
     			else if(reserved == 'waitlisted')
     			{
-    				row.insertCell(4).innerHTML = "<button type='button' disabled='true' id=" + classdate +" onclick='reserveClass(this)'>Waitlist</button>";
+    				row.insertCell(4).innerHTML = "<button type='button' disabled='true' id=" + classdate +" onclick='reserveClass(this)'>Waitlist # " + waitspot + "</button>";
     				row.insertCell(5).innerHTML = "<button type='button' id=" + classdate +" onclick='cancelClass(this)'>Cancel Waitlist</button>";
     			}
     			else
