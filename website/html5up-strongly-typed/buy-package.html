@@ -11,7 +11,13 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 		<meta http-equiv="X-UA-Compatible" content="IE=edge" /> 
 		<link rel="stylesheet" href="assets/css/main.css" />
-
+		<style>
+			ul.no-bullets {
+			  list-style-type: none;
+			  margin: 0;
+			  padding: 0;
+			}
+		</style>
 	</head>
 	<body class="no-sidebar is-preload">
 		<script src="https://www.paypal.com/sdk/js?client-id=ARFAJ4v0DMU0-jp__jkVEVNYP139DlETKokloLrUywQ0qjlOs0H5x1ETIVDJARd3rBuCPJHGKWrdZ2fY&vault=true" data-sdk-integration-source="button-factory"></script>
@@ -56,9 +62,24 @@
 							<!-- Post -->
 								<article class="box post">
 									<header>
-										<h2>Streaming Packages</h2>
+										<h2>Live and Streaming Packages</h2>
 									</header>
 									<span class="image featured"><img src="images/HighJump2.jpg" alt="" /></span>
+
+									<ul class="no-bullets">
+										<li>
+											<button id="streamingButton" onclick="javascript:togglePackage('streaming')">1 Month Unlimited Streaming - $20</button>
+										</li>
+										<li>
+											<button onclick="javascript:togglePackage('live')">1 Live Class - $10</button>
+										</li>
+										<li>
+											<button onclick="javascript:togglePackage('4live')">4 Live Classes - $35</button>
+										</li>
+									</ul>
+								
+								<div id="streaming" style="display:none">
+									<p>
 									<h3>1 Month Unlimited Streaming - $20</h3>
 									<p> With this package, you'll have access to all High Replays as well as Annie's Bootcamp videos. 
 									<p>Current streaming times for High are:
@@ -89,6 +110,65 @@
 								          }
 								      }).render('#paypal-button-container'); // Renders the PayPal button
 								    </script>
+								   </p>
+								</p>
+							</p>
+						</div>
+							<div id="live" style="display:none">
+								<p>
+									<h3>1 Live Class - $10</h3>
+									<p>Purchase a credit for 1 live class with Annie and Cassie!
+									<p>
+									<div id="paypal-button-container-live"></div>
+										<script>
+									      paypal.Buttons({
+									        createOrder: function(data, actions) {
+									          return actions.order.create({
+									            purchase_units: [{
+									              amount: {
+									                value: '10.00'
+									              }
+									            }]
+									          });
+									        },
+									        onApprove: function(data, actions) {
+									          return actions.order.capture().then(function(details) {
+									            //alert('Transaction Details ' + details);
+									            buyLive(details)
+									          });
+									        }
+									      }).render('#paypal-button-container-live');
+									  </script>
+									</p>
+								</p>
+							</div>
+							<div id="4live" style="display:none">
+								<p>
+									<h3>4 Live Classes - $35</h3>
+									<p>Purchase discounted credits for 4 live classes with Annie and Cassie!
+									<p>
+									<div id="paypal-button-container-4live"></div>
+										<script>
+									      paypal.Buttons({
+									        createOrder: function(data, actions) {
+									          return actions.order.create({
+									            purchase_units: [{
+									              amount: {
+									                value: '35.00'
+									              }
+									            }]
+									          });
+									        },
+									        onApprove: function(data, actions) {
+									          return actions.order.capture().then(function(details) {
+									          		buyLive(details)
+									          });
+									        }
+									      }).render('#paypal-button-container-4live');
+									  </script>
+									</p>
+								</p>
+							</div>
 								</article>
 
 						</div>
@@ -107,6 +187,28 @@ function parseCookie()
   	.split('=')[1];
 
   	return jwt;
+}
+
+function togglePackage(divname)
+{
+	if(divname == "streaming")
+	{
+		document.getElementById("live").style.display = "none"
+		document.getElementById("4live").style.display = "none"
+		document.getElementById("streaming").style.display = "block"
+	}
+	else if(divname == "live")
+	{
+		document.getElementById("streaming").style.display = "none"
+		document.getElementById("live").style.display = "block"
+		document.getElementById("4live").style.display = "none"
+	}
+	else if(divname == "4live")
+	{
+		document.getElementById("streaming").style.display = "none"
+		document.getElementById("live").style.display = "none"
+		document.getElementById("4live").style.display = "block"
+	}
 }
 
 
@@ -149,8 +251,8 @@ function hasSubscription(userdata)
 	hasCurrentPayment = false;
 	if(json.isPaymentCurrent == "ACTIVE")
 	{
-		document.getElementById("subscription").textContent="Active Subscription On File - No Further Payment Required!"
-		document.getElementById("paypal-button-container").style.display = "none"
+		document.getElementById("subscription").textContent="Active Streaming Subscription On File"
+		document.getElementById("streamingButton").style.display = "none"
 	}
 	else
 	{
@@ -163,6 +265,29 @@ function xmlRequest(data)
 	var postRequest = new XMLHttpRequest()
 
 	postRequest.open('POST', 'https://7s6z0gkda0.execute-api.us-east-2.amazonaws.com/default/any', true)
+	postRequest.setRequestHeader('Content-type', 'application/json;charset=UTF-8');
+	postRequest.setRequestHeader('X-Api-Key', parseCookie())
+	
+	postRequest.onload = function () 
+	{
+	  // Begin accessing JSON data here
+	  var responseData = JSON.parse(this.response)
+
+	  if (postRequest.status >= 200 && postRequest.status < 400) 
+	  {
+	  		alert("Purchase Complete!")
+	  		window.location.replace("../user-info.html")
+	  }
+	}
+
+	postRequest.send(JSON.stringify(data))
+}
+
+function buyLive(data)
+{
+	var postRequest = new XMLHttpRequest()
+
+	postRequest.open('POST', 'https://a2wfx5q809.execute-api.us-east-2.amazonaws.com/default/any', true)
 	postRequest.setRequestHeader('Content-type', 'application/json;charset=UTF-8');
 	postRequest.setRequestHeader('X-Api-Key', parseCookie())
 	

@@ -10,6 +10,11 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 		<link rel="stylesheet" href="assets/css/main.css" />
+		<style>
+			input:disabled {
+    			color: black;
+			}
+		</style>
 	</head>
 	<body class="no-sidebar is-preload">
 		<div id="page-wrapper">
@@ -19,8 +24,8 @@
 					<div class="container">
 
 						<!-- Logo -->
-							<h1 id="logo"><a href="home.html"></a>Annie Cassie Fit</h1>
-							<p><strong><span id ="status">Page Loading... Please Wait</span><strong></p>
+							<h1 id="logo"><a href="index.html"></a>Annie Cassie Fit</h1>
+							<p><strong><span id ="status">Page Loading... Please Wait</span></strong></p>
 
 						<!-- Nav -->
 							<nav id="nav">
@@ -70,52 +75,88 @@
 										<div class="row gtr-50">
 											<div class="col-6 col-12-small">
 												<label for="username">Username</label>
-												<input name="username" id="username" placeholder="Username" type="text" />
+												<input disabled name="username" id="username" placeholder="Username" type="text" />
 											</div>
 											<div class="col-6 col-12-small">
 												<label for="username">First Name</label>
-												<input name="fname" id="fname" type="text" />
+												<input disabled name="fname" id="fname" type="text" />
 											</div>
 											<div class="col-6 col-12-small">
 												<label for="username">Last Name</label>
-												<input name="lname" id="lname" type="text" />
+												<input disabled name="lname" id="lname" type="text" />
 											</div>
 											<div class="col-6 col-12-small">
 												<label for="username">Email</label>
-												<input name="email" id="email" type="text" />
+												<input disabled name="email" id="email" type="text" />
 											</div>
 											<div class="col-6 col-12-small">
 												<label for="username">Phone</label>
-												<input name="phone" id="phone" type="text" />
+												<input disabled name="phone" id="phone" type="text" />
 											</div>
 											<div class="col-6 col-12-small">
 												<label id="waiver-label" for="waiver">Waiver Signed Date</label>
-												<div id="waiver-div"><input name="waiver" id="waiver" type="text" /></div>
+												<div id="waiver-div"><input disabled name="waiver" id="waiver" type="text" /></div>
 											</div>
 											<div class="col-6 col-12-small">
 												<label for="payment">Next Scheduled Payment</label>
-												<input name="payment" id="payment" type="text" />
+												<input disabled name="payment" id="payment" type="text" />
+											</div>
+											<div class="col-6 col-12-small">
+												<label for="payment">Available Live Class Credits</label>
+												<input disabled name="credits" id="credits" type="text" />
 											</div>
 										</div>
 									</form>
 								</section>
 							</div>
-							<div class="col-6 col-12-medium" id="streaming-link" style="display:none">
-								<section>
-									<form method="post" action="https://1fuqo5lkh6.execute-api.us-east-2.amazonaws.com/default/any">
-										<div class="row gtr-50">
+							<div class="col-6 col-12-small" id="streaming-link" style="display:none">
+										
+									<a href="high-fitness.html">
+										<span><strong>Approved For Streaming!</strong></span>
+									</a>
+							</div>	
+											<p>
+										</div>
+									<div class="row gtr-50">
 											<div class="col-6 col-12-small">
+										
 												
-												<a href="high-fitness.html">
-													<span>Approved For Streaming!</span>
-												</a>
 											</div>	
 											<p>
 										</div>
-									</form>
+									<div class="row gtr-50" id="pay-history-div">
+										<div class="col-6 col-12-medium">
+											<h3>Live Class Payment History</h3>
+											<table id="paymentHistory">
+												   <tr>
+												      <th>Date</th>
+												      <th>Amount</th>
+												      <th>Credits</th>
+												   </tr>
+											</table>
+										</div>
+									</div>
+									<div class="row gtr-50">
+											<div class="col-6 col-12-small">
+										
+												
+											</div>	
+											<p>
+										</div>
+									<div class="row gtr-50" id="class-history-div">
+										<div class="col-6 col-12-medium">
+											<h3>Live Classes Reserved/Attended</h3>
+											<table id="classHistory">
+												   <tr>
+												      <th>Class Date</th>
+												   </tr>
+											</table>
+										</div>
+									</div>
 								</section>
-								</div>
 							</div>
+								
+						</div>
 							
 
 			<!-- Footer -->
@@ -198,6 +239,50 @@ function populatePage(requestData)
 	document.getElementById("email").value = json.email;
 	document.getElementById("waiver").value = json.waiverSignedDate;
 	document.getElementById("payment").value = json.nextPayment;
+	document.getElementById("credits").value = json.paidLiveCredits;
+
+	//Fill out Payment History
+	livePaymentList = json.paymentHistory
+	var table = document.getElementById("paymentHistory");
+	if(livePaymentList.length > 0)
+	{
+		document.getElementById("paymentHistory").style.display = "block"
+	}
+	for (var i = 0, l = livePaymentList.length; i < l; i++) 
+	{		
+		var obj = livePaymentList[i];
+		amount = obj.amount
+		transaction_date = obj.transaction_date
+		credits = 1
+		if(amount == 35)
+		{
+			credits = 4
+		}
+
+		row = table.insertRow(i +1)
+		row.insertCell(0).innerHTML = transaction_date;
+		row.insertCell(1).innerHTML = amount;
+		row.insertCell(2).innerHTML = credits;
+	}
+
+	//Fill out Live Class Attendance History
+	classHistoryList = json.classHistory
+	var historyTable = document.getElementById("classHistory");
+	if(classHistoryList.length > 0)
+	{
+		document.getElementById("classHistory").style.display = "block"
+	}
+	for (var i = 0, l = classHistoryList.length; i < l; i++) 
+	{		
+		var obj = classHistoryList[i];
+		classdate = obj.classdate
+		signup_time = obj.signup_time
+
+		row = historyTable.insertRow(i +1)
+		row.insertCell(0).innerHTML = classdate;
+		//row.insertCell(1).innerHTML = signup_time;
+	}
+
 
 	isActive = json.isActiveForStream;
 

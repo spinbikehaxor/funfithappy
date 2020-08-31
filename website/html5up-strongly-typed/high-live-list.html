@@ -46,6 +46,7 @@
 			<!-- Main -->
 				<section id="main">
 					<div class="container">
+						<h4>NOTE: Cancellations with a refunded credit are allowed up to 3 hours before class</h4>
 						<div class="row">
 			
 								<section>
@@ -122,6 +123,9 @@ function getClassData()
     			var obj = json[i];
     			classdate = obj.class_date
     			time = obj.class_time
+    			classDateTime = classdate + '/' + time
+
+
     			capacity = obj.capacity
     			remaining_spots = capacity
     			display_name = obj.display_name
@@ -144,12 +148,12 @@ function getClassData()
     			if(reserved == 'reserved')
     			{
     				row.insertCell(4).innerHTML = "<button type='button' disabled='true' id=" + classdate +" onclick='reserveClass(this)'>You're In!</button>";
-    				row.insertCell(5).innerHTML = "<button type='button' id=" + classdate +" onclick='cancelClass(this)'>Cancel Reservation</button>";
+    				row.insertCell(5).innerHTML = "<button type='button' id=" + classDateTime +" onclick='cancelClass(this)'>Cancel Reservation</button>";
     			}
     			else if(reserved == 'waitlisted')
     			{
     				row.insertCell(4).innerHTML = "<button type='button' disabled='true' id=" + classdate +" onclick='reserveClass(this)'>Waitlist # " + waitspot + "</button>";
-    				row.insertCell(5).innerHTML = "<button type='button' id=" + classdate +" onclick='cancelClass(this)'>Cancel Waitlist</button>";
+    				row.insertCell(5).innerHTML = "<button type='button' id=" + classDateTime +" onclick='cancelClass(this)'>Cancel Waitlist</button>";
     			}
     			else
     			{
@@ -195,6 +199,11 @@ function cancelClass(reserve_button)
 		  {	
 				window.location.reload()
 		  }
+		  else if (postRequest.status == 422)
+		  {
+		  		window.alert(postRequest.responseText)
+		  		document.getElementById("status").textContent="Live HIGH Classes"
+		  }
 
 	   }
 	 
@@ -233,6 +242,11 @@ function reserveClass(reserve_button)
 		  {	
 		  		spotNumber = postRequest.responseText;
 				window.location.reload()
+		  }
+		  else if( postRequest.status == 422)
+		  {
+		  		window.alert(postRequest.responseText)
+				document.getElementById("status").textContent="Live HIGH Classes"
 		  }
 
 	   }

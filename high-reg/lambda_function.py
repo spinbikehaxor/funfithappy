@@ -175,7 +175,7 @@ def lambda_handler(event, context):
 def is_dup(username, email, phone):
     print ("in check_for_dups")
     dynamodb = boto3.resource('dynamodb', region_name='us-east-2', endpoint_url="https://dynamodb.us-east-2.amazonaws.com")
-    table = dynamodb.Table('HighUsers')
+    table = dynamodb.Table('SiteUsers')
     
     scan_response = table.scan();
     for i in scan_response['Items']:

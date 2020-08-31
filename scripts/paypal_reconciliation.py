@@ -110,6 +110,11 @@ def checkForMissingPayments(authtoken):
     #Iterate through all transactions from last 24 hours
     for i in response_json['transaction_details']:
         transaction = i['transaction_info']
+
+        #This means it's not a subscription
+        if 'paypal_reference_id_type' not in transaction.keys():
+            continue
+
         transaction_type = transaction['paypal_reference_id_type']
 
         #Right now we're only concerned with subscriptions... this will change

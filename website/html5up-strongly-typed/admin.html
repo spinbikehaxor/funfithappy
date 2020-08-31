@@ -97,19 +97,37 @@
 									<form id="addClass">
 										<div class="row gtr-50">
 											<div class="col-6 col-12-small">
-												<input name="classdate" id="newclassdate" placeholder="Class Date (2020-08-20)" type="text" />
+												<input name="classdate" id="newclassdate" placeholder="Class Date (2020-08-20)" type="text" maxlength="10"/>
 											</div>
 											<div class="col-6 col-12-small">
 												<select name="location" id="classlocation" placeholder="Location"/>
 												<option value="placeholder" disabled selected>Pick Location</option>
 											</div>
 											<div class="col-6 col-12-small">
-												<input name="classtime" id="newclasstime" placeholder="Class Time (i.e. 17:00)" type="text" />
+												<input name="classtime" id="newclasstime" placeholder="Class Time (i.e. 17:00)" type="text"  maxlength="5"/>
 											</div>
 											<div class="col-12">
 												<a href="javascript:postLiveCLass()" class="form-button-submit button icon solid fa-envelope">Submit</a>
 											</div>
 	
+										</div>
+									</form>
+									<p>
+									<h3>Queue Next High Video</h3>
+									<form id="stageVideo">
+										<div class="row gtr-50">
+											<div class="col-6 col-12-small">
+												<input name="videoURL" id="videoURL" placeholder="Video URL" type="text" />
+											</div>
+											<div class="col-6 col-12-small">
+												<iframe id="testVideoFrame" src="" frameborder="0" allow="autoplay; fullscreen" allowfullscreen style="display:none"></iframe>
+											</div>
+											<div class="col-12">
+												<a href="javascript:testVideo()" class="form-button-submit button icon solid fa-envelope">Test Video</a>
+											</div>
+											<div class="col-12">
+												<a href="javascript:saveVideo()" class="form-button-submit button icon solid fa-envelope">Save Video Link</a>
+											</div>
 										</div>
 									</form>
 								</section>
@@ -139,6 +157,107 @@
 <script>
 window.onload= getAdminData()
 
+
+function testVideo()
+{
+	url = document.getElementById("videoURL").value;
+	frame = document.getElementById("testVideoFrame")
+	frame.src= url
+	frame.style.display = "block"
+}
+
+function saveVideo()
+{
+	var postRequest = new XMLHttpRequest()
+
+	var data = {
+  		"url" : document.getElementById("videoURL").value
+	};
+
+	postRequest.open('POST', 'https://joh8lgdanl.execute-api.us-east-2.amazonaws.com/default/any', true)
+	postRequest.setRequestHeader('Content-type', 'application/json;charset=UTF-8');
+	postRequest.setRequestHeader('X-Api-Key', parseCookie())
+	
+	postRequest.onload = function () 
+	{
+	  // Begin accessing JSON data here
+	  var responseData = JSON.parse(this.response)
+
+	  if (postRequest.status >= 200 && postRequest.status < 400) 
+	  {
+	  		alert("Video Saved!")
+	  		//window.location.reload()
+	  }
+	  else 
+	  {
+	  	alert(postRequest.responseText)
+	  }
+	}
+
+	postRequest.send(JSON.stringify(data))
+
+}
+
+
+function dateInputMask(elm) {
+  elm.addEventListener('keypress', function(e) {
+    if(e.keyCode < 47 || e.keyCode > 57) {
+      e.preventDefault();
+    }
+    
+    var len = elm.value.length;
+    
+    // If we're at a particular place, let the user type the slash
+    // i.e., 12/12/1212
+    if(len !== 1 || len !== 3) {
+      if(e.keyCode == 47) {
+        e.preventDefault();
+      }
+    }
+    
+    // If they don't add the slash, do it for them...
+    if(len === 4) {
+      elm.value += '-';
+    }
+
+    // If they don't add the slash, do it for them...
+    if(len === 7) {
+      elm.value += '-';
+    }
+  });
+};
+
+function timeInputMask(elm)
+{
+	 elm.addEventListener('keypress', function(e) 
+	 {
+	    if(e.keyCode < 47 || e.keyCode > 57) 
+	    {
+	      e.preventDefault();
+	    }
+    
+    	var len = elm.value.length;
+    
+	    // If we're at a particular place, let the user type the slash
+	    // i.e., 12/12/1212
+	    if(len !== 1 || len !== 3) 
+	    {
+	      if(e.keyCode == 47) 
+	      {
+	        e.preventDefault();
+	      }
+	    }
+    
+	    // If they don't add the slash, do it for them...
+	    if(len === 2) 
+	    {
+	      elm.value += ':';
+	    }
+   
+  	});
+};
+
+
 async function processRequest()
 {
 	const data = await sendRequest();
@@ -161,6 +280,9 @@ function getAdminData()
 	{
 		window.location.replace("sign-in.html")
 	}
+
+	dateInputMask(newclassdate);
+	timeInputMask(newclasstime);
 
 	var postRequest = new XMLHttpRequest()
 	postRequest.open('POST', 'https://iqtl1ffmkd.execute-api.us-east-2.amazonaws.com/default/any', true)
@@ -203,7 +325,7 @@ function populatePage(requestData)
 		var opt = document.createElement('option');
 		opt.id = locations[i].locId
     	opt.value = locations[i].locId
-    	opt.innerHTML = locations[i].display_name;
+    	opt.innerHTML = locations[i].display_name + " (" + locations[i].capacity + ")";
     	locSelect.appendChild(opt);
 	}
 

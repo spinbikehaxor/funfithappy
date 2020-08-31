@@ -10,7 +10,7 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 		<link rel="stylesheet" href="assets/css/main.css" />
-		<script src="https://www.google.com/recaptcha/api.js"></script>
+		<script src="https://www.google.com/recaptcha/api.js" async defer></script>
 	</head>
 	<body class="no-sidebar is-preload">
 		<div id="page-wrapper">
@@ -31,7 +31,7 @@
 									<li><a class="icon solid fa-sitemap" href="sign-in.html"><span>Sign In</span></a></li>
 									<li><a class="icon solid fa-cog" href="high-fitness-intro.html"><span>High Fitness</span></a></li>
 									<li><a class="icon solid fa-retweet" href="boot-camp-intro.html"><span>Boot Camp</span></a></li>
-									<li><a class="icon solid fa-sitemap" href="high-fitness-intro.html"><span>About Annie and Cassie</span></a></li>
+									<li><a class="icon solid fa-sitemap" href="bio.html"><span>About Annie and Cassie</span></a></li>
 								</ul>
 							</nav>
 
@@ -74,6 +74,7 @@
 											<div class="col-6 col-12-small">
 												<input name="confpwd" id="confpwd" placeholder="Confirm Password" type="password" />
 											</div>
+									
 											<div class="col-12">
 												<a href="javascript:xmlRequest()" class="form-button-submit button icon solid fa-envelope">Submit</a>
 											</div>
@@ -125,6 +126,7 @@ function xmlRequest()
 		alert("Password values do not match");
 		return;
 	}
+
 	var postRequest = new XMLHttpRequest()
 
 	var data = {
@@ -134,7 +136,7 @@ function xmlRequest()
   		"lname"				: document.getElementById('lname').value,
   		"email"				: document.getElementById('email').value,
   		"preferredContact"	: document.getElementById('prefContact').value,
-  		"phone"				: document.getElementById('phone').value,
+  		"phone"				: document.getElementById('phone').value
 	};
 
 	postRequest.open('POST', 'https://mswp3lsdrl.execute-api.us-east-2.amazonaws.com/default/any', true)
@@ -172,50 +174,6 @@ function xmlRequest()
      javascript:xmlRequest()
    }
 
-
-/*
-This is supposedly a better approach, but I can't get it to work yet. Screw it. Maybe will get back to it
-async function sendRequest()
-{ 
-	
-	"use strict"
-	let url = "https://mswp3lsdrl.execute-api.us-east-2.amazonaws.com/default/register";
-
-	var data = {
-  		"username"			: document.getElementById('username').value,
-  		"password"			: document.getElementById('pwd').value,
-  		"fname"				: document.getElementById('fname').value,
-  		"lname"				: document.getElementById('lname').value,
-  		"email"				: document.getElementById('email').value,
-  		"preferredContact"	: document.getElementById('prefContact').value,
-  		"phone"				: document.getElementById('phone').value,
-	};
-
-	var request = new Request(url, { method: "POST",
-                                     body: JSON.stringify(data),
-                                     mode: "no-cors" });
-
-	const response = await fetch(request);
-	const body = await response.text();
-	return body;
-
-	if (response.ok) 
-	{ // if HTTP-status is 200-299
-  		// get the response body (the method explained below)
-  		let json = await response.json();
-  		alert("good response: " + json)
-		/*location.reload(); 
-	}
-	else 
-	{
-  		alert("HTTP-Error: " + response.statusText);
-  		var bodytext = await response.text();
-  		alert("bad response: " + bodytext)
-	}
-
-	/*alert("Thank you! You may now sign in to reserve a space in an upcoming High class") 
-}
-*/
 
 </script>
 
