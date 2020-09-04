@@ -29,7 +29,7 @@ def main():
 	testCredits()
 	testCancelPaid()
 	testCancelFree()
-	test3HourCancelCutoff()
+	 test3HourCancelCutoff()
 
 	#testClassSpotsTaken
 
@@ -202,8 +202,6 @@ def cleanupSignup():
 
 	while i < 10:
 		username = "testtest" + str(i)
-		password = "spinbike"
-
 		usertoken = signIn(username, password)
 		headers = {'Content-Type': 'application/json', 'x-api-key' : usertoken}
 
