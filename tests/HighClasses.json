@@ -1,0 +1,25 @@
+[{
+		"class_year": "2021",
+		"class_date": "2021-09-03",
+		"class_time": "13:00",
+		"location": "phms",
+		"spots_taken": "10",
+		"isFree": "False"
+	},
+	{
+		"class_year": "2021",
+		"class_date": "2021-09-06",
+		"class_time": "13:00",
+		"location": "tiny",
+		"spots_taken": "5",
+		"isFree": "False"
+	},
+	{
+		"class_year": "2021",
+		"class_date": "2021-09-07",
+		"class_time": "13:00",
+		"location": "tiny",
+		"spots_taken": "1",
+		"isFree": "True"
+	}
+]

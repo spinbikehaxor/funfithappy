@@ -74,16 +74,10 @@
 											<div class="col-6 col-12-small">
 												<input name="confpwd" id="confpwd" placeholder="Confirm Password" type="password" />
 											</div>
-									
+											<div class="g-recaptcha" data-sitekey="6Le_6sQZAAAAAIMXhgP1Lzfx7zymbHlJ5a0dGOPg"></div>
 											<div class="col-12">
 												<a href="javascript:xmlRequest()" class="form-button-submit button icon solid fa-envelope">Submit</a>
 											</div>
-										<!--	<div class="col-12">
-											<button class="g-recaptcha" 
-											        data-sitekey="reCAPTCHA_site_key" 
-											        data-callback='onSubmit' 
-											        data-action='submit'>Submit</button>
-											 </div>-->
 										</div>
 									</form>
 								</section>
@@ -127,6 +121,13 @@ function xmlRequest()
 		return;
 	}
 
+	var v = grecaptcha.getResponse();
+    if(v.length == 0)
+    {
+        window.alert("Please check 'I'm not a robot");
+        return;
+    } 
+
 	var postRequest = new XMLHttpRequest()
 
 	var data = {
@@ -136,7 +137,8 @@ function xmlRequest()
   		"lname"				: document.getElementById('lname').value,
   		"email"				: document.getElementById('email').value,
   		"preferredContact"	: document.getElementById('prefContact').value,
-  		"phone"				: document.getElementById('phone').value
+  		"phone"				: document.getElementById('phone').value,
+  		"captcha"			: v
 	};
 
 	postRequest.open('POST', 'https://mswp3lsdrl.execute-api.us-east-2.amazonaws.com/default/any', true)
@@ -155,13 +157,6 @@ function xmlRequest()
 	  else 
 	  {
 	  	alert(postRequest.responseText)
-	  /*  errors = JSON.parse(postRequest.responseText)
-	    alert(errors)
-	    
-	    for (x in errors) 
-	    {
-  			alert(errors[x])
-		}*/
 	  }
 	}
 

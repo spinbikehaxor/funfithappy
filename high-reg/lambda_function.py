@@ -6,14 +6,14 @@ import hashlib
 import html
 import os
 import phonenumbers
-import re
-import uuid
+import requests
 
 import django
 from django.contrib.auth import password_validation
 from django.core.exceptions import ValidationError
 from django.conf import settings
 from email_validator import validate_email, EmailNotValidError
+from botocore.exceptions import ClientError
 
 def lambda_handler(event, context):
     print("In lambda_handler")
@@ -21,7 +21,6 @@ def lambda_handler(event, context):
     #Initialize django's password validation library
     init_validator()
     json_string = json.dumps(event)
-    print(json_string)
     json_data = json.loads(json_string)
     body = json.loads(json_data['body'])
     isValidPhone = False
@@ -45,6 +44,7 @@ def lambda_handler(event, context):
         email = body['email']
         phone = body['phone']
         preferredContact = body['preferredContact']
+        captcha = body['captcha']
 
     try:
         formattedPhone = phonenumbers.parse(phone, "US")
@@ -138,7 +138,16 @@ def lambda_handler(event, context):
             'body': json.dumps("Username must be at least 8 characters")
         }
 
-
+    if not isValidCaptcha(captcha):
+        return {
+            'statusCode': 422,
+            'headers': {
+            'Access-Control-Allow-Headers': '*',
+            'Access-Control-Allow-Origin':  '*',
+            'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
+            },
+            'body': json.dumps("Captcha Challenge Failed")
+        }
         
     passHash = hash_password(password.strip());
         
@@ -172,6 +181,28 @@ def lambda_handler(event, context):
         'body': json.dumps('Participant written to DynamoDB!')
     }
 
+def isValidCaptcha(captcha):
+    print("in validateCaptcha")
+    
+    #Call Google to verify captcha
+    url = "https://www.google.com/recaptcha/api/siteverify"
+    
+    secretString = json.dumps(get_secret('captcha_secret'))
+    secretData = json.loads(secretString)
+    CAPTCHA_SECRET = secretData['captcha']
+    data = {
+        'secret' : CAPTCHA_SECRET,
+        'response' : captcha
+    }
+
+    r= requests.post(url, data)
+    response_json = json.loads(r.text)
+    if(response_json['success'] is False):
+        print("Captcha failed: " + str(response_json['error-codes']))
+        return False
+    print("captcha results " + str(response_json))
+    return True
+
 def is_dup(username, email, phone):
     print ("in check_for_dups")
     dynamodb = boto3.resource('dynamodb', region_name='us-east-2', endpoint_url="https://dynamodb.us-east-2.amazonaws.com")
@@ -185,7 +216,7 @@ def is_dup(username, email, phone):
         dbuser = json_data['username']
         dbemail = json_data['email']
         dbphone = json_data['phone']
-        print("checking values against db values for dups")
+        
         if(dbuser == username or dbemail == email or dbphone == phone):
             return True
 
@@ -216,4 +247,54 @@ def hash_password(password):
                                 salt, 100000)
     pwdhash = binascii.hexlify(pwdhash)
     return (salt + pwdhash).decode('ascii')
+
+def get_secret(secret_name):
+    region_name = "us-east-2"
+
+    # Create a Secrets Manager client
+    session = boto3.session.Session()
+    client = session.client(
+        service_name='secretsmanager',
+        region_name=region_name
+    )
+
+    # In this sample we only handle the specific exceptions for the 'GetSecretValue' API.
+    # See https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
+    # We rethrow the exception by default.
+
+    try:
+        get_secret_value_response = client.get_secret_value(
+            SecretId=secret_name
+        )
+    except ClientError as e:
+        print("error retrieving secret " + str(e))
+        if e.response['Error']['Code'] == 'DecryptionFailureException':
+            # Secrets Manager can't decrypt the protected secret text using the provided KMS key.
+            # Deal with the exception here, and/or rethrow at your discretion.
+            raise e
+        elif e.response['Error']['Code'] == 'InternalServiceErrorException':
+            # An error occurred on the server side.
+            # Deal with the exception here, and/or rethrow at your discretion.
+            raise e
+        elif e.response['Error']['Code'] == 'InvalidParameterException':
+            # You provided an invalid value for a parameter.
+            # Deal with the exception here, and/or rethrow at your discretion.
+            raise e
+        elif e.response['Error']['Code'] == 'InvalidRequestException':
+            # You provided a parameter value that is not valid for the current state of the resource.
+            # Deal with the exception here, and/or rethrow at your discretion.
+            raise e
+        elif e.response['Error']['Code'] == 'ResourceNotFoundException':
+            # We can't find the resource that you asked for.
+            # Deal with the exception here, and/or rethrow at your discretion.
+            raise e
+    else:
+        # Decrypts secret using the associated KMS CMK.
+        # Depending on whether the secret is a string or binary, one of these fields will be populated.
+        if 'SecretString' in get_secret_value_response:
+            secret = get_secret_value_response['SecretString']
+            return json.loads(secret)
+        else:
+            decoded_binary_secret = base64.b64decode(get_secret_value_response['SecretBinary'])
+            return json.loads(decoded_binary_secret)
  

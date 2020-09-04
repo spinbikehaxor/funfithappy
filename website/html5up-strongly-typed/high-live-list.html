@@ -58,7 +58,6 @@
 											      <th>Open Spots</th>
 											      <th></th>
 											   </tr>
-									
 											</table>
 								
 								</section>
@@ -132,6 +131,7 @@ function getClassData()
     			reserved = obj.reserved
     			spots_taken = obj.spots_taken
     			waitspot = obj.waitSpot
+    			isFree = obj.isFree
 
     			remaining_spots = capacity - spots_taken
     			if(remaining_spots < 0)
@@ -160,6 +160,10 @@ function getClassData()
     				if(remaining_spots == 0)
     				{
     					row.insertCell(4).innerHTML = "<button type='button' id=" + classdate +" onclick='reserveClass(this)'>Join Waitlist</button>";
+    				}
+    				else if(isFree == "True")
+    				{
+    					row.insertCell(4).innerHTML = "<button type='button' id=" + classdate +" onclick='reserveClass(this)'>Reserve Free Class</button>";
     				}
     				else
     				{

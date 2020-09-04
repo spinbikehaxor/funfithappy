@@ -32,6 +32,11 @@ def isAuthorized(jwt_token):
             
             global username 
             username = payload['username']
+            
+            if username not in ('dianatest', 'casshighfit', 'anniesouter'):
+                print("User is not an admin")
+                return False
+                
         except (jwt.DecodeError, jwt.ExpiredSignatureError) as e:
             print("got decoding error!" + str(e))
             return False
@@ -96,7 +101,8 @@ def saveClass(body):
     date = html.escape(body['class_date'].lower().strip())
     location = html.escape(body['location']).strip()
     class_time = html.escape(body['class_time']).strip()
-   # print ("class_time length")
+    isFree = html.escape(body['isFree']).strip()
+    
     if len(class_time) != 5:
         return "ERROR: Please enter the class time in Hour:Minute format using 24 hour time (i.e. 17:00, 01:00, etc.)"
     
@@ -125,7 +131,8 @@ def saveClass(body):
             'class_date': date,
             'class_time': class_time,
             'location' : location,
-            'spots_taken' : 0
+            'spots_taken' : 0,
+            'isFree' : isFree
         }
     )
     

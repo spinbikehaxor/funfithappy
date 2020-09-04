@@ -92,12 +92,40 @@ def lambda_handler(event, context):
              },
             'body': json.dumps('Please complete the waiver prior to reserving a spot in class')
         }
-    
-    
+        
     body_json = json.loads(body)
     class_date = body_json['class_date']
+    
+    class_details = getClassDetails(class_date)
+    isFree = class_details['isFree']
 
-    spotNumber = signup(class_date)
+    capacity = class_details['capacity']
+    
+    if isFree == "False" and not hasPaidCredits(username):
+        return {
+            'statusCode': 422,
+            'headers': 
+             {
+                'Access-Control-Allow-Headers': '*',
+                'Access-Control-Allow-Origin':  '*',
+                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
+             },
+            'body': json.dumps('Please purchase class credits prior to reserving a spot in class')
+        }
+    
+    spotNumber = signup(class_date, capacity, isFree)
+    if(spotNumber == -1):
+        return {
+            'statusCode': 422,
+            'headers': 
+             {
+                'Access-Control-Allow-Headers': '*',
+                'Access-Control-Allow-Origin':  '*',
+                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
+             },
+            'body': json.dumps('You already have a reservation for the requested class')
+        }
+    
     
     return {
         'statusCode': 200,
@@ -109,13 +137,41 @@ def lambda_handler(event, context):
         'body': json.dumps(spotNumber)
     }
     
-def signup(class_date):
+def hasPaidCredits(username):
+    table = dynamodb.Table('HighLiveCredits')
+    
+    query_response = table.query(
+        KeyConditionExpression=Key('username').eq(username)
+    )
+    for i in query_response['Items']:
+        credits = i['credits']
+        if credits > 0:
+            return True
+    
+    return False
+            
+            
+def decrementPaidCredits(username):
+    table = dynamodb.Table('HighLiveCredits')
+    response = table.update_item(
+        Key={
+            'username': username
+        },
+        UpdateExpression='SET credits = if_not_exists(credits, :zero) - :decr',
+            ConditionExpression="credits > :zero",
+            ExpressionAttributeValues={
+                ':decr': 1, ':zero': 0
+            },
+        ReturnValues="UPDATED_NEW"
+    )
+            
+    
+def signup(class_date, capacity, isFree):
     table = dynamodb.Table('HighLiveClassSignup')
     
     signup_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     formatted_username = username.strip().lower()
-    capacity = getClassCapacity(class_date)
     spotNumber = getSpotNumber(formatted_username, class_date)
     reserve_position = 0
     waitlist_position = 0
@@ -141,25 +197,36 @@ def signup(class_date):
         incrementSpotsTaken(class_date)
     except ClientError as e:
         print(str(e))
+        return -1
+        
+    #Only charge a credit if not on waitlist
+    if isFree == "False":
+        print("class is paid - charging!")
+        if waitlist_position == 0 and reserve_position > 0:
+            decrementPaidCredits(formatted_username)
+        
     
     return spotNumber
         
-def getClassCapacity(class_date):
+def getClassDetails(class_date):
     
     #Step 1: Get Location
     table = dynamodb.Table('HighClasses')
     location = ''
     classDateObj = datetime.strptime(class_date, '%Y-%m-%d')
     class_year = classDateObj.strftime( "%Y")
+    isFree = False
   
     response = table.query(
         KeyConditionExpression=Key('class_year').eq(class_year) & Key('class_date').eq(class_date)
     )
     
+    
     for i in response['Items']:
         location = i['location']
+        if 'isFree' in i.keys():
+            isFree = i['isFree']
     
-
     #Step 2: Get Capacity for Location
     table = dynamodb.Table('HighLocation')
   
@@ -168,8 +235,14 @@ def getClassCapacity(class_date):
     )
     for i in response['Items']:
         capacity = i['capacity']
-        return capacity
-    
+        
+        
+    data = {
+        'location' : location,
+        'capacity' : capacity,
+        'isFree' : isFree
+    }
+    return data
     
 
 def getSpotNumber(username, class_date):
@@ -208,11 +281,13 @@ def incrementSpotsTaken(class_date):
     )
         
 def hasSignedWaiver(username):
-    table = dynamodb.Table('HighWaivers')
+    table = dynamodb.Table('HighWaiver')
     
-    scan_response = table.scan();
+    response = table.query(
+        KeyConditionExpression=Key('username').eq(username)
+    )
 
-    for i in scan_response['Items']:
+    for i in response['Items']:
         json_string = json.dumps(i)
         json_data = json.loads(json_string)
         

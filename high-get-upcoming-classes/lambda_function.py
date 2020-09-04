@@ -93,7 +93,9 @@ def getClasses():
     future_classes = []
     current_year = datetime.now().strftime( "%Y")
     current_date = datetime.now().strftime( "%Y-%m-%d")
-    
+    resSpot = 0
+    waitSpot = 0
+    isFree = False
     user_class_list = getUserClasses()
     
     #TODO: Adjust for timezone
@@ -102,6 +104,7 @@ def getClasses():
     )
 
     for i in scan_response['Items']:
+        isFree = False
         class_date = i['class_date']
         reserved = None
         
@@ -120,6 +123,10 @@ def getClasses():
         t = time.strptime(class_time, "%H:%M")
         timevalue_12hour = time.strftime( "%-I:%M %p", t )
         
+        if 'isFree' in i.keys():
+            print("db value of isFree for class " + class_date + " is " + i['isFree'] )
+            isFree = i['isFree']
+        
         spots_taken = 0
         location_data = getLocationDetails(i['location'])
             
@@ -129,7 +136,10 @@ def getClasses():
             "class_date":class_date,
             "class_time":timevalue_12hour,
             "reserved":reserved,
-            "spots_taken":str(spots_taken)
+            "spots_taken":str(spots_taken),
+            "res_spot": resSpot,
+            "waitSpot": waitSpot,
+            "isFree": isFree    
         }
             
         class_data.update(location_data)

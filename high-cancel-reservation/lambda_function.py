@@ -3,6 +3,7 @@ import datetime
 import json
 import jwt
 import time
+import pytz
 
 from datetime import datetime, timedelta
 from pytz import timezone
@@ -47,6 +48,10 @@ def lambda_handler(event, context):
     body = json_data['body']
     body_json = json.loads(body)
     class_date = body_json['class_date']
+
+    #Date comes from client with time appended. Strip that off
+    classDateSplit = class_date.split("/")
+    classDateString = classDateSplit[0]
     
     if 'x-api-key' not in headers.keys():
         return {
@@ -78,7 +83,7 @@ def lambda_handler(event, context):
     global dynamodb
     dynamodb = boto3.resource('dynamodb', region_name='us-east-2', endpoint_url="https://dynamodb.us-east-2.amazonaws.com")
     
-    if not withinCancelWindow(class_date):
+    if not withinCancelWindow(classDateString):
         return {
             'statusCode': 422,
             'headers': {
@@ -89,9 +94,6 @@ def lambda_handler(event, context):
             'body': json.dumps("Cannot Cancel Within 3 Hours of Class")
     }
     
-    #Date comes from client with time appended. Strip that off
-    classDateSplit = class_date.split("/")
-    classDateString = classDateSplit[0]
     cancelReservation(classDateString)
     
     return {
@@ -106,14 +108,22 @@ def lambda_handler(event, context):
     
 def withinCancelWindow(class_date):
 
-    datetime_obj_naive = datetime.strptime(class_date, '%Y-%m-%d/%H:%M')
+    classtime = getClassTime(class_date)
+
+    classTimeStamp = class_date + "/" + classtime
+
+    datetime_obj_naive = datetime.strptime(classTimeStamp, '%Y-%m-%d/%H:%M')
     datetime_obj_pacific = timezone('US/Pacific').localize(datetime_obj_naive)
     print('Class Datetime:' + str( datetime_obj_pacific))
 
     cut_off_time = (datetime_obj_pacific - timedelta(hours=3))
-    print("Cancellation cut off window " + str(cut_off_time))
+    print("Cancellation cut off window " + str(cut_off_time))   
 
-    currentTimePacific = timezone('US/Pacific').localize(datetime.now())
+    utcmoment_naive = datetime.utcnow()
+    utcmoment = utcmoment_naive.replace(tzinfo=pytz.utc)
+    currentTimePacific = utcmoment.astimezone(timezone('US/Pacific'))
+
+    
     print("Current time Pacific: " + str(currentTimePacific))
 
     if(currentTimePacific < cut_off_time):
@@ -333,6 +343,17 @@ def decrementSpotsTaken(class_date):
     else:
         return response
         
+def getClassTime(class_date):
+    table = dynamodb.Table('HighClasses')
+    classDateObj = datetime.strptime(class_date, '%Y-%m-%d')
+    class_year = classDateObj.strftime( "%Y")
+  
+    response = table.query(
+        KeyConditionExpression=Key('class_year').eq(class_year) & Key('class_date').eq(class_date)
+    )
+    for i in response['Items']:
+        class_time = i['class_time']
+        return class_time
         
 def getClassCapacity(class_date):
     
