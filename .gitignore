@@ -3,3 +3,11 @@ tests/credentials.json
 *package*
 *.mov
 high-get-user/package/*
+high-cancel-reservation/function.zip
+high-get-user/.DS_Store
+high-login/function.zip
+high-reg/function.zip
+high-reset-password/function.zip
+high-waiver/function.zip
+website/.DS_Store
+

@@ -82,8 +82,8 @@ def lambda_handler(event, context):
     table = dynamodb.Table('SiteUsers')
     
     query_response = table.query(
-		KeyConditionExpression=Key('username').eq(formatted_username)
-	)
+        KeyConditionExpression=Key('username').eq(formatted_username)
+    )
     #scan_response = table.scan();
 
     for i in query_response['Items']:
@@ -100,6 +100,10 @@ def lambda_handler(event, context):
         if(dateSigned and (subscription_data['subscription_status'])):
             if(subscription_data['subscription_status'] == 'ACTIVE'):
                 isActiveForStream = True
+                
+        credits = getPaidCredits(formatted_username)
+        payments = getLivePaymentHistory(formatted_username)
+        classHistory = getLiveClassHistory(formatted_username)
         
         user ={
             'username': json_data['username'],
@@ -111,7 +115,10 @@ def lambda_handler(event, context):
             'waiverSignedDate': dateSigned,
             'nextPayment': subscription_data['nextPayment'],
             'isPaymentCurrent': subscription_data['subscription_status'],
-            'isActiveForStream': isActiveForStream }
+            'isActiveForStream': isActiveForStream,
+            'paidLiveCredits': str(credits),
+            'paymentHistory': payments,
+            'classHistory': classHistory }
 
         return {
             'statusCode': 200,
@@ -135,6 +142,61 @@ def lambda_handler(event, context):
         'body': json.dumps('No record found for ' + username)
     }
 
+def getLivePaymentHistory(username):
+    table = dynamodb.Table('HighLivePayment')
+    transactions = []
+    sorted_payments = []
+    
+    query_response = table.query(
+        KeyConditionExpression=Key('username').eq(username)
+    )
+    for i in query_response['Items']:
+        
+        transaction_date = i['transaction-date']
+        transDateSplit = transaction_date.split('T')
+        payment_date = transDateSplit[0]
+        
+        data = {
+            "amount":i['amount-paid'],
+            "transaction_date":payment_date,
+        }
+        transactions.append(data)
+        
+    sorted_payments = sorted(transactions, key = lambda i: i['transaction_date'], reverse=True)
+    return sorted_payments
+    
+def getLiveClassHistory(username):
+    table = dynamodb.Table('HighLiveClassSignup')
+    classes = []
+    sorted_classes = []
+    
+    query_response = table.query(
+        KeyConditionExpression=Key('username').eq(username),
+        IndexName="username-index"
+    )
+    #TODO - add clause where only get resposition > 0
+    for i in query_response['Items']:
+        data = {
+            "classdate":i['class_date'],
+            "signup_time":i['signup_time'],
+        }
+        classes.append(data)
+        
+    sorted_classes = sorted(classes, key = lambda i: i['classdate'], reverse=True)
+    return sorted_classes
+    
+def getPaidCredits(username):
+    
+    table = dynamodb.Table('HighLiveCredits')
+    credits = 0
+    
+    query_response = table.query(
+        KeyConditionExpression=Key('username').eq(username)
+    )
+    for i in query_response['Items']:
+        credits = i['credits']
+        
+    return credits
 
         
 def getWaiver(username):
@@ -142,8 +204,8 @@ def getWaiver(username):
     print("looking up waiver for " + username)
     
     query_response = table.query(
-		KeyConditionExpression=Key('username').eq(username)
-	)
+        KeyConditionExpression=Key('username').eq(username)
+    )
     for i in query_response['Items']:
         json_string = json.dumps(i)
         json_data = json.loads(json_string)
@@ -162,9 +224,9 @@ def getPayPalSubscription(username):
     query_username = username.lower().strip()
     table = dynamodb.Table('HighPayment')
     query_response = table.query(
-		KeyConditionExpression=Key('username').eq(query_username)
-	)
-	
+        KeyConditionExpression=Key('username').eq(query_username)
+    )
+    
     for i in query_response['Items']:
         json_string = json.dumps(i)
         json_data = json.loads(json_string)
@@ -310,4 +372,3 @@ def get_secret(secret_name):
             decoded_binary_secret = base64.b64decode(get_secret_value_response['SecretBinary'])
             return json.loads(decoded_binary_secret)
     
-
