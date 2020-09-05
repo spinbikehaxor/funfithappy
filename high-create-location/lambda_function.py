@@ -31,6 +31,11 @@ def isAuthorized(jwt_token):
             
             global username 
             username = payload['username']
+            
+            if username not in ('dianatest', 'casshighfit', 'anniesouter'):
+                print("User is not an admin")
+                return False
+                
         except (jwt.DecodeError, jwt.ExpiredSignatureError) as e:
             print("got decoding error!" + str(e))
             return False
@@ -85,7 +90,8 @@ def saveLocation(body):
     
     id = html.escape(body['id'].lower().strip())
     address = html.escape(body['address']).strip()
-    capacity = html.escape(body['capacity']).strip()
+    capacityString = html.escape(body['capacity']).strip()
+    capacity = int(capacityString)
     display_name = html.escape(body['display-name']).strip()
     
     response = table.put_item(

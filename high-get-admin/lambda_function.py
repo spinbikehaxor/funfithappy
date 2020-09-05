@@ -32,6 +32,10 @@ def isAuthorized(jwt_token):
             
             global username 
             username = payload['username']
+            
+            if username not in ('dianatest', 'casshighfit', 'anniesouter'):
+                print("User is not an admin")
+                return False
         except (jwt.DecodeError, jwt.ExpiredSignatureError) as e:
             print("got decoding error!" + str(e))
             return False
@@ -132,16 +136,30 @@ def getClassRoster(classdate):
         username = i['username']
         spot_number = i['reserve_position']
         waitlist_number = i['waitlist_position']
+        signup_time = i['signup_time']
+        realname = getAttendeeName(username)
         
         data = {
-            'username' : username,
+            'username' : realname,
             'spot_number' : str(spot_number),
-            'waitlist_number' : str(waitlist_number)
+            'waitlist_number' : str(waitlist_number),
+            'signup_time' : signup_time
         }
         roster.append(data)
-    sorted_roster = sorted(roster, key = lambda i: i['username'])
+    sorted_roster = sorted(roster, key = lambda i: i['signup_time'])
     return sorted_roster
     
+def getAttendeeName(username):
+    table = dynamodb.Table('SiteUsers')
+    query_response = table.query(
+        KeyConditionExpression=Key('username').eq(username)
+    )
+    for i in query_response['Items']:
+        fname = i['fname']
+        lname = i['lname']
+        
+        fullname = fname + " " + lname
+        return fullname
     
 def getLocations():
     print('in getLocations')
