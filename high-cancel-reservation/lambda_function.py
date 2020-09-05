@@ -52,6 +52,7 @@ def lambda_handler(event, context):
     #Date comes from client with time appended. Strip that off
     classDateSplit = class_date.split("/")
     classDateString = classDateSplit[0]
+    print("classDateString" + classDateString)
     
     if 'x-api-key' not in headers.keys():
         return {
@@ -82,19 +83,24 @@ def lambda_handler(event, context):
     
     global dynamodb
     dynamodb = boto3.resource('dynamodb', region_name='us-east-2', endpoint_url="https://dynamodb.us-east-2.amazonaws.com")
+
+    class_details = getClassDetails(classDateString)
+    isFree = class_details['isFree']
+
+    #Let free classes be canceled at any time
+    if not isFree:
+        if not withinCancelWindow(classDateString, class_details['class_time']):
+            return {
+                'statusCode': 422,
+                'headers': {
+                    'Access-Control-Allow-Headers': '*',
+                    'Access-Control-Allow-Origin':  '*',
+                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
+                },
+                'body': json.dumps("Cannot Cancel Within 3 Hours of Class")
+            }
     
-    if not withinCancelWindow(classDateString):
-        return {
-            'statusCode': 422,
-            'headers': {
-                'Access-Control-Allow-Headers': '*',
-                'Access-Control-Allow-Origin':  '*',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
-            },
-            'body': json.dumps("Cannot Cancel Within 3 Hours of Class")
-    }
-    
-    cancelReservation(classDateString)
+    cancelReservation(classDateString, isFree, class_details['capacity'])
     
     return {
         'statusCode': 200,
@@ -106,9 +112,7 @@ def lambda_handler(event, context):
         'body': json.dumps("Reservation Canceled")
     }
     
-def withinCancelWindow(class_date):
-
-    classtime = getClassTime(class_date)
+def withinCancelWindow(class_date, classtime):
 
     classTimeStamp = class_date + "/" + classtime
 
@@ -123,7 +127,7 @@ def withinCancelWindow(class_date):
     utcmoment = utcmoment_naive.replace(tzinfo=pytz.utc)
     currentTimePacific = utcmoment.astimezone(timezone('US/Pacific'))
 
-    
+   # currentTimePacific = timezone('US/Pacific').localize(datetime.now())
     print("Current time Pacific: " + str(currentTimePacific))
 
     if(currentTimePacific < cut_off_time):
@@ -134,7 +138,7 @@ def withinCancelWindow(class_date):
         return False
     
     
-def cancelReservation(class_date):
+def cancelReservation(class_date, isFree, capacity):
     print("in cancelReservation")
     table = dynamodb.Table('HighLiveClassSignup')
     userformatted = username.lower().strip()
@@ -158,17 +162,18 @@ def cancelReservation(class_date):
         )
     decrementSpotsTaken(class_date)
     
-    if(reservePosition > 0 and waitlistPosition == 0):
-        returnPaidCredit(userformatted)
-        reserved = True
+    if not isFree:
+        print("Not free so checking spot to return credit")
+        if(reservePosition > 0 and waitlistPosition == 0):
+            print("reserved spot so returning credit")
+            returnPaidCredit(userformatted)
+            reserved = True
         
-    #updateListPositions(class_date, reservePosition, waitlistPosition)
-    reorderPositions(class_date, reserved)
+    reorderPositions(class_date, reserved, isFree, capacity)
     
-def reorderPositions(class_date, reserved):
+def reorderPositions(class_date, reserved, isFree, capacity):
     reservationList = []
     sorted_reservations = []
-    capacity = getClassCapacity(class_date)
     
     #Pull all records for class date
     table = dynamodb.Table('HighLiveClassSignup')
@@ -208,7 +213,8 @@ def reorderPositions(class_date, reserved):
         #If a reservation was cancelled (vs a waitlist) bump the first person up from the waitlist and charge a credit    
         elif classCountIter == capacity and reserved:
             resSpot = classCountIter
-            chargeCreditForBumpedUpUser(reservation['username'])
+            if not isFree:
+                chargeCreditForBumpedUpUser(reservation['username'])
             
         #Reorder the waitlist
         elif classCountIter > capacity:
@@ -228,59 +234,6 @@ def reorderPositions(class_date, reserved):
         )
         i += 1
     
-    
-#Takes the position of the person cancelling, loops through other records and bumps them up the list
-def updateListPositions(class_date, reservePosition, waitlistPosition):
-    table = dynamodb.Table('HighLiveClassSignup')
-    waitlistPulledAlready = False #Make sure you only pull one person in off the waitlist
-    
-    scan_response = table.query(
-        #IndexName='username-index',
-        KeyConditionExpression=Key('class_date').eq(class_date)
-    )
-    for reservation in scan_response['Items']:
-        print("looping through query response")
-        #If the person cancelling had a reserved spot
-        if(reservePosition > 0):
-            #Decrement reserved spot for people higher up on the reserved list
-            if (reservation['reserve_position'] > reservePosition):
-                decrementReservedPosition(reservation['class_date'], reservation['username'], (reservation['reserve_position'] -1), 0 )
-            
-            #Pull the first person in off the waitlist
-            elif(reservation['waitlist_position'] == 1 and not waitlistPulledAlready):
-                decrementReservedPosition(reservation['class_date'], reservation['username'], getClassCapacity(reservation['class_date']), 0 )
-                waitlistPulledAlready = True
-                chargeCreditForBumpedUpUser(reservation['username'])
-                #TODO: Send this person a happy email! And charge them a credit!
-            
-            #Move others on the waitlist up one spot
-            elif(reservation['waitlist_position'] > 1):
-                decrementReservedPosition(reservation['class_date'], reservation['username'], 0, (reservation['waitlist_position'] -1) )
-        
-        #If the person cancelling had a waitlisted spot
-        elif(waitlistPosition > 0):
-            if (reservation['waitlist_position'] > waitlistPosition):
-                decrementReservedPosition(reservation['class_date'], reservation['username'], 0, (reservation['waitlist_position'] -1) )
-            
-        
-    print("updateListPositions: complete!")
-    
-#Bumps the next people in line up the list, one at a time. Called by updateListPositions
-def decrementReservedPosition(class_date, username, reservePosition, waitlistPosition):
-    table = dynamodb.Table('HighLiveClassSignup')
- 
-    update_response = table.update_item(
-        Key={
-        'username': username,
-        'class_date': class_date
-        },
-       UpdateExpression='SET reserve_position = :reservePosition, waitlist_position = :waitlistPosition',
-            ExpressionAttributeValues={
-                ':reservePosition': reservePosition, ':waitlistPosition': waitlistPosition
-            },
-            ReturnValues="UPDATED_NEW"
-    )
-    print("Updated " + username + " to reservation " + str(reservePosition) + " waitlistPosition " + str(waitlistPosition))
 
 def chargeCreditForBumpedUpUser(username):
     table = dynamodb.Table('HighLiveCredits')
@@ -342,34 +295,29 @@ def decrementSpotsTaken(class_date):
             raise
     else:
         return response
-        
-def getClassTime(class_date):
-    table = dynamodb.Table('HighClasses')
-    classDateObj = datetime.strptime(class_date, '%Y-%m-%d')
-    class_year = classDateObj.strftime( "%Y")
-  
-    response = table.query(
-        KeyConditionExpression=Key('class_year').eq(class_year) & Key('class_date').eq(class_date)
-    )
-    for i in response['Items']:
-        class_time = i['class_time']
-        return class_time
-        
-def getClassCapacity(class_date):
-    
+
+def getClassDetails(class_date):
+    print("in getClassDetails " + class_date)
     #Step 1: Get Location
     table = dynamodb.Table('HighClasses')
     location = ''
     classDateObj = datetime.strptime(class_date, '%Y-%m-%d')
     class_year = classDateObj.strftime( "%Y")
+    isFree = False
+    class_time = ''
   
     response = table.query(
         KeyConditionExpression=Key('class_year').eq(class_year) & Key('class_date').eq(class_date)
     )
     
+    
     for i in response['Items']:
         location = i['location']
-    
+        class_time = i['class_time']
+        if 'isFree' in i.keys():
+            isFreeString = i['isFree']
+            if isFreeString == "True":
+                isFree = True
 
     #Step 2: Get Capacity for Location
     table = dynamodb.Table('HighLocation')
@@ -379,9 +327,15 @@ def getClassCapacity(class_date):
     )
     for i in response['Items']:
         capacity = i['capacity']
-        return capacity
-    
-    
+        
+        
+    data = {
+        'location' : location,
+        'capacity' : capacity,
+        'isFree' : isFree,
+        'class_time' : class_time
+    }
+    return data
 
 def get_secret(secret_name):
     region_name = "us-east-2"

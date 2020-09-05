@@ -27,13 +27,13 @@ def main():
 	setupSignup()
 	
 	testCredits()
-	testCancelPaid()
-	testCancelFree()
-	 test3HourCancelCutoff()
-
+	testCancelPaidReservation()
+	testCancelFreeReservation()
+	test3HourCancelCutoff()
+	testPaidCancelledClass()
 	#testClassSpotsTaken
 
-	cleanupSignup()
+	#cleanupSignup()
 	cleanupClasses()
 
 
@@ -57,8 +57,8 @@ def testCredits():
 		print(str(e))
 	
 
-def testCancelPaid():
-	print("in testCancelPaid")
+def testCancelPaidReservation():
+	print("in testCancelPaidReservation")
 	#CancelReservation URL
 	cancelUrl = "https://do4iamsbnb.execute-api.us-east-2.amazonaws.com/sandbox/any"
 	username = "testtest1"
@@ -97,8 +97,60 @@ def testCancelPaid():
 	except AssertionError as e:
 		print(str(e))
 
-def testCancelFree():
-	print('in testCancelFree')
+def testPaidCancelledClass():
+	print('in testPaidCancelledClass')
+	url = "https://hgggmyp4je.execute-api.us-east-2.amazonaws.com/sandbox/any"
+	headers = {'Content-Type': 'application/json', 'x-api-key' : authCookie}
+
+	utcmoment_naive = datetime.utcnow()
+	utcmoment = utcmoment_naive.replace(tzinfo=pytz.utc)
+	currentTimePacific = utcmoment.astimezone(timezone('US/Pacific'))
+	today_class_date = currentTimePacific.strftime("%Y-%m-%d")
+
+	data = {
+				"class_date": today_class_date
+		   }
+	r= requests.post(url, json.dumps(data), headers=headers)
+
+
+	#Check that credit was refunded to reserved person
+	getUserUrl = "https://6e32hgucc3.execute-api.us-east-2.amazonaws.com/sandbox/any"
+	username = "testtest4"
+	usertoken = signIn(username, password)
+	headers = {'Content-Type': 'application/json', 'x-api-key' : usertoken}
+
+	r= requests.post(getUserUrl, headers=headers)
+	response_dict = r.text
+	json_data = json.loads(response_dict)
+
+	paidLiveCredits = json_data['paidLiveCredits']
+
+	try:
+		assert(paidLiveCredits == "10")
+	except AssertionError as e:
+		print(str(e))
+
+	#Check that class does not show up in upcoming classes
+	getUpcomingClassesUrl = "https://0rzktwd2ae.execute-api.us-east-2.amazonaws.com/sandbox/any"
+	r= requests.post(getUserUrl, headers=headers)
+	response_dict = r.text
+	json_data = json.loads(response_dict)
+	classFound = False
+
+	for i in json_data:
+		if(i['class_date'] == today_class_date):
+			classFound = True
+
+	try:
+		assert(classFound == False)
+	except AssertionError as e:
+		print(str(e))
+
+	#TODO Need to test waitlisted person and make sure credits unchanged
+
+
+def testCancelFreeReservation():
+	print('in testCancelFreeReservation')
 	cancelUrl = "https://do4iamsbnb.execute-api.us-east-2.amazonaws.com/sandbox/any"
 	username = "testtest1"
 	usertoken = signIn(username, password)
