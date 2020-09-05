@@ -9,5 +9,7 @@ high-login/function.zip
 high-reg/function.zip
 high-reset-password/function.zip
 high-waiver/function.zip
+high-waiver/package/*
+high-save-streaming-link/package/*
 website/.DS_Store
 
