@@ -73,12 +73,16 @@ def lambda_handler(event, context):
     
     locations = getLocations()
     classes = getUpcomingClasses()
+    streamingTimes = getStreamingTimes()
+    
     print(str(locations))
     print(str(classes))
+    print(str(streamingTimes))
     
     data = {
         'locations':locations,
-        'classes' : classes
+        'classes' : classes,
+        "streamingTimes" : streamingTimes
     }
     
     return {
@@ -160,6 +164,39 @@ def getAttendeeName(username):
         
         fullname = fname + " " + lname
         return fullname
+    
+def getStreamingTimes():
+    table = dynamodb.Table('HighStreamingTimes')
+    scan_response = table.scan()
+    times = []
+    sorted_times = []
+    sorter = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    sorterIndex = dict(zip(sorter,range(len(sorter))))
+    
+    for i in scan_response['Items']:
+        dayOfWeek = i['day_of_week']
+        dayOfWeekNum = getDayOfWeek(dayOfWeek)
+        timeOfDay = i['time_of_day']
+        data = {
+            'dayOfWeek' : dayOfWeek,
+            'timeOfDay': timeOfDay,
+            'dayOfWeekNum' : dayOfWeekNum
+        }
+        times.append(data)
+    sorted_times = sorted(times, key = lambda i: i['dayOfWeekNum'])
+    return sorted_times
+    
+def getDayOfWeek(dayName):
+    switcher = {
+        "Sunday"    : 0,
+        "Monday"    : 1,
+        "Tuesday"   : 2,
+        "Wednesday" : 3,
+        "Thursday"  : 4,
+        "Friday"    : 5,
+        "Saturday"  : 6
+    } 
+    return switcher.get(dayName)   
     
 def getLocations():
     print('in getLocations')

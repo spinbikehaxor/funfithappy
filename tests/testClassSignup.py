@@ -131,8 +131,10 @@ def testPaidCancelledClass():
 		print(str(e))
 
 	#Check that class does not show up in upcoming classes
+	#TODO - this won't work with my test data since it only gets classes for the current year
 	getUpcomingClassesUrl = "https://0rzktwd2ae.execute-api.us-east-2.amazonaws.com/sandbox/any"
-	r= requests.post(getUserUrl, headers=headers)
+	r= requests.post(getUpcomingClassesUrl, headers=headers)
+	print("response from getUpcomingClasses: " +r.text)
 	response_dict = r.text
 	json_data = json.loads(response_dict)
 	classFound = False

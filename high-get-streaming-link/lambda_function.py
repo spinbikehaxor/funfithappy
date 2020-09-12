@@ -75,14 +75,16 @@ def withinStreamingWindow():
             streamTime = json_data['time_of_day']
             streamTimeSplit = streamTime.split(':')
             streamHour = int(streamTimeSplit[0])
-            streamMin = int(streamTimeSplit[1])
-
-            streamStartTime = streamStartTime.replace(hour=streamHour, minute=streamMin)
-            cut_off_time = (streamStartTime + timedelta(hours=1))
+            streamMin = int(streamTimeSplit[1]) 
             
-            print("found a streaming time for today! " + str(streamStartTime) + " with cutoff " + str(cut_off_time))
-
-            if (currentTimePacific >= streamStartTime) and (currentTimePacific < cut_off_time):
+            streamStartTime = streamStartTime.replace(hour=streamHour, minute=streamMin)
+            streamStartTime = (streamStartTime - timedelta(minutes=1))
+            cut_off_time = (streamStartTime + timedelta(hours=1, minutes=2))
+            
+            print("found a streaming time for today! " + str(streamStartTime.time()) + " with cutoff " + str(cut_off_time.time()))
+            print("currentTimePacific = " + str(currentTimePacific.time()))
+            
+            if (currentTimePacific.time() >= streamStartTime.time()) and (currentTimePacific.time() < cut_off_time.time()):
                 print("Woo Hoo Active Stream Time!!")
                 return True
         

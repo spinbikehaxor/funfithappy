@@ -1,12 +1,8 @@
 import base64
 import boto3
-import datetime
 import json
 import jwt
-
 from boto3.dynamodb.conditions import Key
-from datetime import datetime
-from dateutil.relativedelta import relativedelta
 
 
 def isAuthorized(jwt_token):
@@ -52,8 +48,6 @@ def authorizeUser(headers):
         return True
 
 def lambda_handler(event, context):
-    print(str(event))
-    print("in lambda_handler")
     json_string = json.dumps(event)
     print(json_string)
     json_data = json.loads(json_string)
@@ -68,113 +62,34 @@ def lambda_handler(event, context):
             'body': json.dumps('User is not logged in')
         }
     print("username = " + username)
-    usernameformatted = username.lower().strip()
+    
     body = json.loads(json_data['body'])
-    
-    print("keys = " + str(body.keys()))
-
-    if 'payer' not in body.keys():
-    #if 'subscriptionID' not in body.keys():
-        print("No Transaction Details Received!")
-        return {
-            'statusCode': 500,
-            'headers': {
-                'Access-Control-Allow-Headers': '*',
-                'Access-Control-Allow-Origin':  '*',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
-            },
-            'body': json.dumps('No Transaction Details Received!')
-        }
-    else:
-        print(str(body))
-        #Code for a single transaction
-        paypal_transaction_id = body['id']
-        paypal_transaction_status = body['status']
-        transaction_date = body['update_time']
-
-        #Get PayPal PayerID
-        payer_string = json.dumps(body['payer'])
-        payer_data = json.loads(payer_string)
-        paypal_payer_id = payer_data['payer_id']
-        
-        #Get Transaction Amount
-        purchase_string = json.dumps(body['purchase_units'])
-        purchase_data = json.loads(purchase_string)
-        amount = purchase_data[0]['amount']
-        amount_string = json.dumps(amount)
-        amount_data = json.loads(amount_string)
-        amount_paid = amount_data['value']
-        print("amount_paid " + amount_paid)
-        
-        dynamodb = boto3.resource('dynamodb', region_name='us-east-2', endpoint_url="https://dynamodb.us-east-2.amazonaws.com")
-        table = dynamodb.Table('HighLivePayment')
-        
-        query_response = table.query(
-        KeyConditionExpression=Key('username').eq(usernameformatted)& Key('paypal_order_id').eq(paypal_transaction_id)
-        )
-        if len(query_response['Items']) > 0:
-            print("Transaction already processed")
-            return {
-            'statusCode': 422,
-            'headers': {
-                'Access-Control-Allow-Headers': '*',
-                'Access-Control-Allow-Origin':  '*',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
-            },
-            'body': json.dumps('Transaction already processed!')
-        }
-        
-        response = table.put_item(
-            Item={
-                'transaction-date': transaction_date,
-                'username': usernameformatted,
-                'paypal_order_id' : paypal_transaction_id,
-                'paypal-transaction-status': paypal_transaction_status,
-                'amount-paid': amount_paid,
-                'paypal-details': body
-            }
-        )
-        addLiveCredits(usernameformatted, amount_paid)
-    
-        return {
-            'statusCode': 200,
-            'headers': {
-                'Access-Control-Allow-Headers': '*',
-                'Access-Control-Allow-Origin':  '*',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
-            },
-            'body': json.dumps('Transaction written to DynamoDB!')
-        }
-    
-def addLiveCredits(usernameformatted, amount_paid):
+    global dynamodb 
     dynamodb = boto3.resource('dynamodb', region_name='us-east-2', endpoint_url="https://dynamodb.us-east-2.amazonaws.com")
-    table = dynamodb.Table('HighLiveCredits')
-    credits = 1
+    table = dynamodb.Table('HighStreamingTimes')
     
-    print("amount_paid = " + amount_paid)
-    if(amount_paid == "35.00"):
-        credits = 4
-        print("credits should be 4 " + str(credits))
+    streamDateTime = body['streamDateTime']
+    class_time_split = streamDateTime.split('/')
+    class_time = class_time_split[1]
+    class_date = class_time_split[0]
     
-    #Check for existing credits - if there, just update
-    query_response = table.query(
-        KeyConditionExpression=Key('username').eq(usernameformatted)
+    response = table.put_item(
+        Item={
+            'day_of_week': class_date,
+            'time_of_day': class_time
+        }
     )
     
-    for i in query_response['Items']:
-        dbCredits = i['credits']
-        credits = (credits + dbCredits)
-        print("added credits to existing amount")
-        
-    response = table.put_item(
-            Item={
-                'username': usernameformatted,
-                'credits' : credits,
-                'update_time': str(datetime.now())
-            }
-        )
-    print(response)
-    
+    return {
+        'statusCode': 200,
+            'headers': {
+                'Access-Control-Allow-Headers': '*',
+                'Access-Control-Allow-Origin':  '*',
+                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
+            },
+            'body': json.dumps('Streaming Time Created')
+    }
+
 def get_secret(secret_name):
     region_name = "us-east-2"
 
@@ -224,5 +139,3 @@ def get_secret(secret_name):
         else:
             decoded_binary_secret = base64.b64decode(get_secret_value_response['SecretBinary'])
             return json.loads(decoded_binary_secret)
-    
-

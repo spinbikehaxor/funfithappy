@@ -233,6 +233,39 @@ body {
 											</div>
 										</div>
 									</form>
+									<p>
+									<h3>Adjust Streaming Times</h3>
+									<table id="streamlist">
+											   <tr>
+											      <th>Day</th>
+											      <th>Time</th>
+											      <th></th>
+											   </tr>
+											</table>
+									<h3>Add New Streaming Time</h3>
+									<form id="addStreamTime">
+									<div class="row gtr-50">
+										<div class="col-6 col-12-small">
+												<select name="streamDay" id="streamDay">
+													<option value="placeholder" disabled selected>Pick Day Of Week</option>
+													<option value="Sunday">Sunday</option>
+													<option value="Monday">Monday</option>
+													<option value="Tuesday">Tuesday</option>
+													<option value="Wednesday">Wednesday</option>
+													<option value="Thursday">Thursday</option>
+													<option value="Friday">Friday</option>
+													<option value="Saturday">Saturday</option>
+												</select>
+										</div>
+										<div class="col-6 col-12-small">
+												<input name="streamtime" id="streamtime" placeholder="Class Time (i.e. 17:00)" type="text" maxlength="5" />
+										</div>		
+									
+									<div class="col-6 col-12-small">
+										<a href="javascript:createStreamingTime()" class="form-button-submit button icon solid fa-envelope">Save Stream Time</a>
+									</div>
+									</div>
+								</form>
 								</section>
 							</div>
 					</div>
@@ -386,6 +419,7 @@ function getAdminData()
 
 	dateInputMask(newclassdate);
 	timeInputMask(newclasstime);
+	timeInputMask(streamtime);
 
 	var postRequest = new XMLHttpRequest()
 	postRequest.open('POST', 'https://iqtl1ffmkd.execute-api.us-east-2.amazonaws.com/default/any', true)
@@ -420,6 +454,7 @@ function populatePage(requestData)
 	json = JSON.parse(requestData);
 	locations = json.locations;
 	classes = json.classes;
+	streamingTimes = json.streamingTimes;
 
 	//populate the locations
 	var locSelect = document.getElementById("classlocation")
@@ -430,6 +465,20 @@ function populatePage(requestData)
     	opt.value = locations[i].locId
     	opt.innerHTML = locations[i].display_name + " (" + locations[i].capacity + ")";
     	locSelect.appendChild(opt);
+	}
+	//populate streaming times
+	var streamTable = document.getElementById("streamlist")
+	for (var i = 0, l = streamingTimes.length; i < l; i++) 
+	{
+		var obj = streamingTimes[i];
+		dayOfWeek = obj.dayOfWeek
+		timeOfDay = obj.timeOfDay
+
+		streamId = dayOfWeek + "/" + timeOfDay
+		row = streamTable.insertRow(i +1)
+		row.insertCell(0).innerHTML = dayOfWeek;
+		row.insertCell(1).innerHTML = timeOfDay;
+		row.insertCell(2).innerHTML = "<button type='button' id='" + streamId +"' onclick='deleteStreamingTime(this)'>Delete</button>";
 	}
 
 	//Populate the classlist
@@ -577,6 +626,76 @@ function postLocation()
 	  }
 	}
 
+	postRequest.send(JSON.stringify(data))
+}
+
+
+function deleteStreamingTime(streamingTime)
+{
+	streamingTimeData = streamingTime.id
+	url = "https://uhfabqv5tj.execute-api.us-east-2.amazonaws.com/default/any"
+	var postRequest = new XMLHttpRequest()
+
+	data = {
+		"streamDateTime" : streamingTimeData
+	}
+
+	postRequest.open('POST', url, true)
+	postRequest.setRequestHeader('Content-type', 'application/json;charset=UTF-8');
+	postRequest.setRequestHeader('X-Api-Key', parseCookie())
+
+	postRequest.onload = function () 
+	{
+	  // Begin accessing JSON data here
+	  var responseData = JSON.parse(this.response)
+
+	  if (postRequest.status >= 200 && postRequest.status < 400) 
+	  {
+	  		alert("Streaming Time Deleted!")
+	  		window.location.reload()
+	  }
+	  else 
+	  {
+	  	alert(postRequest.responseText)
+	  }
+	}
+	postRequest.send(JSON.stringify(data))
+}
+
+function createStreamingTime()
+{
+	url = "https://y1ce0z6lc4.execute-api.us-east-2.amazonaws.com/default/any"
+	var postRequest = new XMLHttpRequest()
+
+	streamDay = document.getElementById('streamDay').value
+	streamTime = document.getElementById('streamtime').value
+	streamDayTime = streamDay + "/" + streamTime
+
+	var data = {
+  		"streamDateTime"		: streamDayTime
+	};
+
+	postRequest.open('POST', url, true)
+	postRequest.setRequestHeader('Content-type', 'application/json;charset=UTF-8');
+	postRequest.setRequestHeader('X-Api-Key', parseCookie())
+
+	postRequest.onload = function () 
+	{
+	  // Begin accessing JSON data here
+	  var responseData = JSON.parse(this.response)
+
+	  if (postRequest.status >= 200 && postRequest.status < 400) 
+	  {
+	  		alert("Streaming Time Created!")
+	  		document.getElementById("streamDay").options[0].selected = true
+	  		document.getElementById('streamtime').value = ""
+	  		window.location.reload()
+	  }
+	  else 
+	  {
+	  	alert(postRequest.responseText)
+	  }
+	}
 	postRequest.send(JSON.stringify(data))
 }
 
