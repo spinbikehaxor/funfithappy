@@ -9,7 +9,12 @@
 		<title>Live HIGH Classes</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/jquery.rtResponsiveTables.min.css">
 		<link rel="stylesheet" href="assets/css/main.css" />
+
+		<script src="assets/js/jquery.min.js"></script>
+		<script src="assets/js/jquery.dropotron.min.js"></script>
+		<script src="assets/jquery.rtResponsiveTables.min.js" type="text/javascript"></script>
 	</head>
 	<body class="no-sidebar is-preload">
 		<div id="page-wrapper">
@@ -77,6 +82,8 @@
 		</div>
 
 <script>
+$("table").rtResponsiveTables();
+
 window.onload = getClassData()
 
 function parseCookie()
@@ -148,26 +155,26 @@ function getClassData()
     			if(reserved == 'reserved')
     			{
     				row.insertCell(4).innerHTML = "<button type='button' disabled='true' id=" + classdate +" onclick='reserveClass(this)'>You're In!</button>";
-    				row.insertCell(5).innerHTML = "<button type='button' id=" + classDateTime +" onclick='cancelClass(this)'>Cancel Reservation</button>";
+    				row.insertCell(5).innerHTML = "<button type='button' id=" + classDateTime +" onclick='cancelClass(this)'>Cancel</button>";
     			}
     			else if(reserved == 'waitlisted')
     			{
     				row.insertCell(4).innerHTML = "<button type='button' disabled='true' id=" + classdate +" onclick='reserveClass(this)'>Waitlist # " + waitspot + "</button>";
-    				row.insertCell(5).innerHTML = "<button type='button' id=" + classDateTime +" onclick='cancelClass(this)'>Cancel Waitlist</button>";
+    				row.insertCell(5).innerHTML = "<button type='button' id=" + classDateTime +" onclick='cancelClass(this)'>Cancel</button>";
     			}
     			else
     			{
     				if(remaining_spots == 0)
     				{
-    					row.insertCell(4).innerHTML = "<button type='button' id=" + classdate +" onclick='reserveClass(this)'>Join Waitlist</button>";
+    					row.insertCell(4).innerHTML = "<button type='button' id=" + classdate +" onclick='reserveClass(this)'>Join Wait list</button>";
     				}
     				else if(isFree == "True")
     				{
-    					row.insertCell(4).innerHTML = "<button type='button' id=" + classdate +" onclick='reserveClass(this)'>Reserve Free Class</button>";
+    					row.insertCell(4).innerHTML = "<button type='button' id=" + classdate +" onclick='reserveClass(this)'>Sign Up Free Class</button>";
     				}
     				else
     				{
-    					row.insertCell(4).innerHTML = "<button type='button' id=" + classdate +" onclick='reserveClass(this)'>Reserve</button>";
+    					row.insertCell(4).innerHTML = "<button type='button' id=" + classdate +" onclick='reserveClass(this)'>Sign Up</button>";
     				}
     				
     			}
@@ -312,8 +319,6 @@ function signOut()
 }
 </script>
 <!-- Scripts -->
-<script src="assets/js/jquery.min.js"></script>
-<script src="assets/js/jquery.dropotron.min.js"></script>
 <script src="assets/js/browser.min.js"></script>
 <script src="assets/js/breakpoints.min.js"></script>
 <script src="assets/js/util.js"></script>
