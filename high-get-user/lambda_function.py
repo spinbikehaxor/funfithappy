@@ -3,14 +3,13 @@ import boto3
 import datetime
 import json
 import jwt
-import requests
+import pytz
 
 from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
 from datetime import datetime
 from datetime import timedelta
-from requests.auth import HTTPBasicAuth
-
+from pytz import timezone
 
 def isAuthorized(jwt_token):
     secretString = json.dumps(get_secret('jwt-secret'))
@@ -84,7 +83,6 @@ def lambda_handler(event, context):
     query_response = table.query(
         KeyConditionExpression=Key('username').eq(formatted_username)
     )
-    #scan_response = table.scan();
 
     for i in query_response['Items']:
         json_string = json.dumps(i)
@@ -95,7 +93,6 @@ def lambda_handler(event, context):
 
         dateSigned = getWaiver(formatted_username)
         subscription_data = getPayPalSubscription(json_data['username'])
-        print(str(subscription_data))
        
         if(dateSigned and (subscription_data['subscription_status'])):
             if(subscription_data['subscription_status'] == 'ACTIVE'):
@@ -118,7 +115,8 @@ def lambda_handler(event, context):
             'isActiveForStream': isActiveForStream,
             'paidLiveCredits': str(credits),
             'paymentHistory': payments,
-            'classHistory': classHistory }
+            'classHistory': classHistory 
+        }
 
         return {
             'statusCode': 200,
@@ -209,20 +207,22 @@ def getWaiver(username):
     for i in query_response['Items']:
         json_string = json.dumps(i)
         json_data = json.loads(json_string)
-        print(str(json_data))
 
         return json_data['date-signed']
 
     print("no waiver found for " + username)
     return None
-
-        
-
     
 def getPayPalSubscription(username):
     #Format username to look for lower case so can do faster query.
     query_username = username.lower().strip()
     table = dynamodb.Table('HighPayment')
+
+    utcmoment_naive = datetime.utcnow()
+    utcmoment = utcmoment_naive.replace(tzinfo=pytz.utc)
+    currentTimePacific = utcmoment.astimezone(timezone('US/Pacific'))
+    print("currentTimePacific: " + str(currentTimePacific))
+
     query_response = table.query(
         KeyConditionExpression=Key('username').eq(query_username)
     )
@@ -230,67 +230,25 @@ def getPayPalSubscription(username):
     for i in query_response['Items']:
         json_string = json.dumps(i)
         json_data = json.loads(json_string)
-        dbUser = json_data['username']
-        transaction_date = json_data['transaction-date']
-        subscription_id = json_data['paypal_subscription_id']
         next_billing_time = json_data['next_billing_time']
         nextBillingSplit = next_billing_time.split('T')
         next_billing_date = nextBillingSplit[0]
         status = json_data['status']
         
         nextBillingDate = datetime.strptime(next_billing_date, '%Y-%m-%d')
-        print("nextBillingDate formatted as date = " + str(nextBillingDate))
+        next_bill_pacific = timezone('US/Pacific').localize(nextBillingDate)
+        print("nextBillingDate pacific formatted as date = " + str(next_bill_pacific))        
         
-        #No need to call PayPal- we're good until the nextBillingDate
-        if(status == "ACTIVE" and nextBillingDate >= datetime.now()):
+        #No need to call PayPal- we're good until the nextBillingDate. Updated with Nighly batch
+        if( (status == "ACTIVE") or (next_bill_pacific >= currentTimePacific)):
           
             data ={
-                'subscription_status': status,
+                'subscription_status': "ACTIVE",
                 'nextPayment': next_billing_date
                 }
             
             return data
-        elif(status == "ACTIVE" and nextBillingDate < datetime.now()):
-            print("Looking up next billing date")
-            auth_token = login_to_paypal();
-            auth_token_param = "Bearer " + auth_token
-            
-            url = "https://api.paypal.com/v1/billing/subscriptions/" + subscription_id
-            headers = {'Content-Type': 'application/json', 'Authorization': auth_token_param }
-            
-            print("calling paypal for subscription details")
-            r= requests.get(url, headers=headers)
-            response_json = json.loads(r.text)
-            billing_string = json.dumps(response_json['billing_info'])
-            billing_data = json.loads(billing_string)
-            print("billing_data = " + str(billing_data))
-            
 
-            update_response = table.update_item(
-                Key={
-                'username': query_username,
-                'transaction-date': transaction_date
-                },
-                UpdateExpression="set #status=:s, next_billing_time=:n",
-                ExpressionAttributeValues={
-                    ':s': response_json['status'],
-                    ':n': billing_data['next_billing_time']
-                },
-                ExpressionAttributeNames =  {
-                    '#status': 'status'
-                },
-                ReturnValues="UPDATED_NEW"
-            )
-
-            data ={
-                'subscription_status': response_json['status'],
-                'nextPayment': billing_data['next_billing_time']
-                }
-            
-            return data
-        else:
-            continue
-        
         
     print("no payment found in database for " + username)
     data ={
@@ -298,29 +256,6 @@ def getPayPalSubscription(username):
         'nextPayment': 'No Payment Scheduled'
     }
     return data;
-    
-
-def login_to_paypal():
-    print('in login_to_paypal')
-    paypal_client_id = "ARFAJ4v0DMU0-jp__jkVEVNYP139DlETKokloLrUywQ0qjlOs0H5x1ETIVDJARd3rBuCPJHGKWrdZ2fY"
-    
-    secretString = json.dumps(get_secret('PaypalSecret'))
-    secretData = json.loads(secretString)
-    paypalSecret = secretData['PaypalSecret']
-    
-    print("calling test")
-    testurl = 'https://www.google.com'
-    tr = requests.get(testurl)
-    print(str(tr))
-    
-    url = "https://api.paypal.com/v1/oauth2/token"
-    payload= {'grant_type': 'client_credentials'}
-
-    r= requests.post(url, payload, auth=HTTPBasicAuth(paypal_client_id, paypalSecret))
-    response_dict = r.text
-    json_data = json.loads(response_dict)
-    token = json_data['access_token']
-    return token
     
 def get_secret(secret_name):
     region_name = "us-east-2"

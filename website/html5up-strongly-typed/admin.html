@@ -209,6 +209,12 @@ body {
 												<input type="checkbox" id="isFree" name="isFree" value="True" />
 												<label for="isFree">Free Class</label>
 											</div>
+											<div class="col-6 col-12-small">
+												<input name="postdate" id="postdate" placeholder="Post Date (2020-08-20)" type="text" maxlength="10" />
+											</div>
+											<div class="col-6 col-12-small">
+												<input name="posttime" id="posttime" placeholder="Post Time (i.e. 17:00)" type="text" maxlength="5" />
+											</div>
 											<div class="col-12">
 												<a href="javascript:postLiveCLass()" class="form-button-submit button icon solid fa-envelope">Submit</a>
 											</div>
@@ -418,8 +424,10 @@ function getAdminData()
 	}
 
 	dateInputMask(newclassdate);
+	dateInputMask(postdate);
 	timeInputMask(newclasstime);
 	timeInputMask(streamtime);
+	timeInputMask(posttime);
 
 	var postRequest = new XMLHttpRequest()
 	postRequest.open('POST', 'https://iqtl1ffmkd.execute-api.us-east-2.amazonaws.com/default/any', true)
@@ -567,7 +575,9 @@ function postLiveCLass()
   		"class_date"		: document.getElementById('newclassdate').value,
   		"class_time"		: document.getElementById('newclasstime').value,
   		"location"			: document.getElementById('classlocation').value,
-  		"isFree"			: isFreeString
+  		"isFree"			: isFreeString,
+  		"post_date"			: document.getElementById('postdate').value,
+  		"post_time"			: document.getElementById('posttime').value,
 	};
 
 	postRequest.open('POST', 'https://716b9237t4.execute-api.us-east-2.amazonaws.com/default/any', true)

@@ -57,12 +57,13 @@ def reconcileSubscriptions(authtoken):
         r= requests.get(url, headers=headers)
         response_json = json.loads(r.text)
 
+        #We want to keep the old next billing time in there so they can finish out their month
         paypal_status = response_json['status']
         if(dbStatus != paypal_status):
             logger.info("Status is different! Local status = " + dbStatus + " paypal_status = " + paypal_status )
             if(paypal_status == 'CANCELLED'):
                 logger.info(dbUser + " has canceled")
-                updateLocalRecord(dbUser, transaction_date, paypal_status, None)
+                updateLocalRecord(dbUser, transaction_date, paypal_status, next_billing_time)
 
         if 'billing_info' not in response_json.keys():
             logger.debug("no billing info found " + str(response_json))
@@ -79,7 +80,8 @@ def reconcileSubscriptions(authtoken):
         paypal_next_billing_time = billing_data['next_billing_time']
         logger.debug("paypal_next_billing_time = " + str(paypal_next_billing_time))
 
-        if( (dbStatus != paypal_status) or (next_billing_time != paypal_next_billing_time)  ):
+        #For active users update the next billing time
+        if( (paypal_status != "CANCELLED") and (next_billing_time != paypal_next_billing_time)  ):
             logger.info("data mismatch for user " + dbUser)
             logger.info("Local status = " + dbStatus + " paypal_status = " + paypal_status )
             logger.info("Local billing = " + next_billing_time + " paypal billing = " + paypal_next_billing_time )

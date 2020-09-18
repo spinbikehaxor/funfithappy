@@ -2,12 +2,15 @@ import boto3
 import datetime
 import json
 import jwt
+import pytz
 import time
 
 from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
+from dateutil import parser
+from pytz import timezone
+
 
 
 def isAuthorized(jwt_token):
@@ -104,6 +107,13 @@ def getClasses():
     )
 
     for i in scan_response['Items']:
+        
+        #Skip any records that aren't ready for posting
+        post_date = i['post_date']
+        post_time = i['post_time']
+        if not isReadyToDisplay(post_date, post_time): 
+            continue
+        
         isFree = False
         class_date = i['class_date']
         reserved = None
@@ -147,6 +157,24 @@ def getClasses():
 
     sorted_classes = sorted(future_classes, key = lambda i: i['class_date'])
     return json.dumps(sorted_classes)
+    
+def isReadyToDisplay(post_date, post_time):
+    post_timestamp_string = str(post_date) + " " + str(post_time)
+    post_datetime = parser.parse(post_timestamp_string)
+    post_datetime_pacific = timezone('US/Pacific').localize(post_datetime)
+    print("post_datetime_pacific: " + str(post_datetime_pacific))
+    
+    utcmoment_naive = datetime.utcnow()
+    utcmoment = utcmoment_naive.replace(tzinfo=pytz.utc)
+    currentTimePacific = utcmoment.astimezone(timezone('US/Pacific'))
+    print("currentTimePacific: " + str(currentTimePacific))
+
+    if currentTimePacific < post_datetime_pacific: 
+        print("not ready to post!")
+        return False
+    else:
+        print("ready to post!")
+        return True
     
 def getLocationDetails(location):
     table = dynamodb.Table('HighLocation')

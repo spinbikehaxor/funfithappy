@@ -36,7 +36,7 @@ def main():
 		if(totalCreditsPurchased > 0):
 
 			creditsRemaining = totalCreditsPurchased - paidClassesTaken
-			if(creditsRemaining != databaseCredits):
+			if(creditsRemaining != databaseCredits and dbUser != 'dianatest'):
 				sendEmail(dbUser)
 				logger.info(dbUser + ": classes taken " + str(paidClassesTaken) + " totalCreditsPurchased " + str(totalCreditsPurchased) + 
 					" Credits in system " + str(databaseCredits) + " calculatedCredits " + str(creditsRemaining ))
