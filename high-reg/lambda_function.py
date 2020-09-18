@@ -7,13 +7,16 @@ import html
 import os
 import phonenumbers
 import requests
-
 import django
+import pytz
+
 from django.contrib.auth import password_validation
 from django.core.exceptions import ValidationError
 from django.conf import settings
 from email_validator import validate_email, EmailNotValidError
 from botocore.exceptions import ClientError
+from datetime import datetime
+from pytz import timezone
 
 def lambda_handler(event, context):
     print("In lambda_handler")
@@ -165,7 +168,8 @@ def lambda_handler(event, context):
             'lname' : html.escape(lname.strip()),
             'email': html.escape(email),
             'phone': html.escape(phone),
-            'preferredContact': html.escape(preferredContact)
+            'preferredContact': html.escape(preferredContact),
+            'created_date' : str(getCurrentTimePacific())
         }
     )
         
@@ -247,6 +251,13 @@ def hash_password(password):
                                 salt, 100000)
     pwdhash = binascii.hexlify(pwdhash)
     return (salt + pwdhash).decode('ascii')
+
+def getCurrentTimePacific():
+    utcmoment_naive = datetime.utcnow()
+    utcmoment = utcmoment_naive.replace(tzinfo=pytz.utc)
+    currentTimePacific = utcmoment.astimezone(timezone('US/Pacific'))
+    print("currentTimePacific: " + str(currentTimePacific))
+    return currentTimePacific
 
 def get_secret(secret_name):
     region_name = "us-east-2"

@@ -1,4 +1,3 @@
-import base64
 import boto3
 import datetime
 import json
@@ -7,8 +6,8 @@ import pytz
 
 from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
+from dateutil import parser
 from pytz import timezone
 
 def isAuthorized(jwt_token):
@@ -90,13 +89,30 @@ def lambda_handler(event, context):
         
         dbUser = json_data['username']
         isActiveForStream = False
-
+        isTrialPeriod = False
         dateSigned = getWaiver(formatted_username)
+
+        if 'created_date' in json_data.keys():
+            print("has created Date!")
+            createdDate = json_data['created_date']
+            createdDateTime = parser.parse(createdDate)
+            trialExpireDate =  (createdDateTime + timedelta(days=7))
+            print("trialExpireDate " + str(trialExpireDate))
+            if (getCurrentTimePacific() < trialExpireDate):
+                isTrialPeriod = True
+        
         subscription_data = getPayPalSubscription(json_data['username'])
        
-        if(dateSigned and (subscription_data['subscription_status'])):
-            if(subscription_data['subscription_status'] == 'ACTIVE'):
-                isActiveForStream = True
+        if dateSigned:
+            print("dateSigned true!")
+            if (subscription_data['subscription_status']):
+                if(subscription_data['subscription_status'] == 'ACTIVE'):
+                    isActiveForStream = True
+            if not isActiveForStream and isTrialPeriod:
+                print("Checking to see if in trial period - expiration date is " + str(trialExpireDate))
+                if (getCurrentTimePacific() < trialExpireDate):
+                    print("User has signed Waiver and is in trial period = ACTIVE")
+                    isActiveForStream = True
                 
         credits = getPaidCredits(formatted_username)
         payments = getLivePaymentHistory(formatted_username)
@@ -115,7 +131,8 @@ def lambda_handler(event, context):
             'isActiveForStream': isActiveForStream,
             'paidLiveCredits': str(credits),
             'paymentHistory': payments,
-            'classHistory': classHistory 
+            'classHistory': classHistory,
+            'isTrialPeriod': isTrialPeriod 
         }
 
         return {
@@ -212,16 +229,18 @@ def getWaiver(username):
 
     print("no waiver found for " + username)
     return None
+
+def getCurrentTimePacific():
+    utcmoment_naive = datetime.utcnow()
+    utcmoment = utcmoment_naive.replace(tzinfo=pytz.utc)
+    currentTimePacific = utcmoment.astimezone(timezone('US/Pacific'))
+    print("currentTimePacific: " + str(currentTimePacific))
+    return currentTimePacific
     
 def getPayPalSubscription(username):
     #Format username to look for lower case so can do faster query.
     query_username = username.lower().strip()
     table = dynamodb.Table('HighPayment')
-
-    utcmoment_naive = datetime.utcnow()
-    utcmoment = utcmoment_naive.replace(tzinfo=pytz.utc)
-    currentTimePacific = utcmoment.astimezone(timezone('US/Pacific'))
-    print("currentTimePacific: " + str(currentTimePacific))
 
     query_response = table.query(
         KeyConditionExpression=Key('username').eq(query_username)
@@ -240,7 +259,7 @@ def getPayPalSubscription(username):
         print("nextBillingDate pacific formatted as date = " + str(next_bill_pacific))        
         
         #No need to call PayPal- we're good until the nextBillingDate. Updated with Nighly batch
-        if( (status == "ACTIVE") or (next_bill_pacific >= currentTimePacific)):
+        if( (status == "ACTIVE") or (next_bill_pacific >= getCurrentTimePacific())):
           
             data ={
                 'subscription_status': "ACTIVE",

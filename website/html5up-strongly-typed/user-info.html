@@ -232,6 +232,8 @@ function populatePage(requestData)
 {
 	json = JSON.parse(requestData);
 	username = json.username;
+	isTrialPeriod = json.isTrialPeriod
+	
 	document.getElementById("username").value = username;
 	document.getElementById("fname").value = json.fname;
 	document.getElementById("lname").value = json.lname;
@@ -300,27 +302,40 @@ function populatePage(requestData)
 			hasCurrentPayment = true
 		}
 
-		if(hasWaiver == false && hasCurrentPayment == false)
+		if(hasWaiver == false && hasCurrentPayment == false && isTrialPeriod == false)
 		{
 			document.getElementById("status").textContent="Account Status: Inactive (No Waiver on Record, No Current Payment)"
 			document.getElementById("waiver-link").style.display = "block"
 			document.getElementById("waiver-link").setAttribute("align", "center")
 		}
-		else if(hasWaiver == true && hasCurrentPayment == false)
+		else if(hasWaiver == true && hasCurrentPayment == false && isTrialPeriod == false)
 		{
 			document.getElementById("status").textContent="Account Status: Inactive (Waiver Signed, No Current Payment)"
 		}
 		else if(hasWaiver == false && hasCurrentPayment == true)
 		{
-			document.getElementById("status").textContent="Account Status: Inactive (Paid in Full, No Waiver on Record)"
+			document.getElementById("status").textContent="Account Status: Inactive (No Waiver on Record)"
+			document.getElementById("waiver-link").style.display = "block"
+			document.getElementById("waiver-link").setAttribute("align", "center")
+		}
+		else if(hasWaiver == false && hasCurrentPayment == false && isTrialPeriod == true)
+		{
+			document.getElementById("status").textContent="Account Status: 1 Week Trial Free Trial. Please Sign Waiver."
 			document.getElementById("waiver-link").style.display = "block"
 			document.getElementById("waiver-link").setAttribute("align", "center")
 		}
 	}
 	else
 	{
+		if (isTrialPeriod == true)
+		{
+			document.getElementById("status").textContent="Account Status: 1 Week Trial Period - Active For Streaming"
+		}
+		else
+		{
+			document.getElementById("status").textContent="Account Status: Active For Streaming"
+		}
 		document.getElementById("streaming-link").style.display = "block"
-		document.getElementById("status").textContent="Account Status: Active (Waiver Signed, Paid in Full)"
 	}
   	
 }
