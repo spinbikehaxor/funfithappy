@@ -3,9 +3,12 @@ import boto3
 import datetime
 import json
 import jwt
+import pytz
 import time
+
 from datetime import datetime
 from boto3.dynamodb.conditions import Key
+from pytz import timezone
 
 def isAuthorized(jwt_token):
     secretString = json.dumps(get_secret('jwt-secret'))
@@ -74,15 +77,17 @@ def lambda_handler(event, context):
     locations = getLocations()
     classes = getUpcomingClasses()
     streamingTimes = getStreamingTimes()
-    
+    streamStats = getRecentStreamStats()
     print(str(locations))
     print(str(classes))
     print(str(streamingTimes))
+    print(str(streamStats))
     
     data = {
         'locations':locations,
         'classes' : classes,
-        "streamingTimes" : streamingTimes
+        "streamingTimes" : streamingTimes,
+        'streamStats' : streamStats
     }
     
     return {
@@ -94,14 +99,45 @@ def lambda_handler(event, context):
             },
             'body': json.dumps(data)
     }
+
+def getCurrentTimePacific():
+    utcmoment_naive = datetime.utcnow()
+    utcmoment = utcmoment_naive.replace(tzinfo=pytz.utc)
+    currentTimePacific = utcmoment.astimezone(timezone('US/Pacific'))
+    return currentTimePacific
+
+def getRecentStreamStats():
+    table = dynamodb.Table('HighStreamStats')
+    current_date = getCurrentTimePacific().strftime( "%Y-%m-%d")
+    statList = []
+    sortedStatList = []
+    
+    query_response = table.query(
+        KeyConditionExpression=Key('date').eq(current_date)
+    )
+    
+    for i in query_response['Items']:
+        realname = getAttendeeName(i['username'])
+        
+        data = {
+            'class_date' : i['date'],
+            'class_time' : i['class_time'],
+            'username' : realname
+        }
+        statList.append(data)
+    
+    sortedStatList = sorted(statList, key = lambda i: i['username'])
+    return sortedStatList
+    
     
 def getUpcomingClasses():
     table = dynamodb.Table('HighClasses')
     location = ''
     future_classes = []
     sorted_classes = []
-    current_year = datetime.now().strftime( "%Y")
-    current_date = datetime.now().strftime( "%Y-%m-%d")
+    currentTimePacific = getCurrentTimePacific()
+    current_year = currentTimePacific.strftime( "%Y")
+    current_date = currentTimePacific.strftime( "%Y-%m-%d")
     
     #TODO: Adjust for timezone
     query_response = table.query(

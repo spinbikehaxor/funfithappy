@@ -9,8 +9,11 @@
 		<title>Administration</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/jquery.rtResponsiveTables.min.css">
 		<link rel="stylesheet" href="assets/css/main.css" />
-		<script src="https://www.google.com/recaptcha/api.js"></script>
+		<script src="assets/js/jquery.min.js"></script>
+		<script src="assets/js/jquery.dropotron.min.js"></script>
+		<script src="assets/jquery.rtResponsiveTables.min.js" type="text/javascript"></script>
 		<style>
 			<style>
 			input[type="checkbox"] {
@@ -163,9 +166,24 @@ body {
 										<h3> Class Roster </h3>
 										</div>			
 								</section>
+						</div>
+
+						<div class="row">
+								<section>
+									<h3> Recent Streaming Stats</h3>
+											<table id="streamStatTable">
+											   <tr>
+											      <th>Date</th>
+											      <th>Time</th>
+											      <th>User Name</th>
+											   </tr>
+											</table>	
+								</section>
 								
 					
 						</div>
+						<p>
+						
 						<div class="row">
 							<div class="col-6 col-12-medium">
 								<section>
@@ -289,14 +307,14 @@ body {
 		</div>
 
 		<!-- Scripts -->
-			<script src="assets/js/jquery.min.js"></script>
-			<script src="assets/js/jquery.dropotron.min.js"></script>
 			<script src="assets/js/browser.min.js"></script>
 			<script src="assets/js/breakpoints.min.js"></script>
 			<script src="assets/js/util.js"></script>
 			<script src="assets/js/main.js"></script>
 
 <script>
+$("table").rtResponsiveTables();
+
 window.onload= getAdminData()
 
 
@@ -463,6 +481,7 @@ function populatePage(requestData)
 	locations = json.locations;
 	classes = json.classes;
 	streamingTimes = json.streamingTimes;
+	streamingStats = json.streamStats;
 
 	//populate the locations
 	var locSelect = document.getElementById("classlocation")
@@ -487,6 +506,20 @@ function populatePage(requestData)
 		row.insertCell(0).innerHTML = dayOfWeek;
 		row.insertCell(1).innerHTML = timeOfDay;
 		row.insertCell(2).innerHTML = "<button type='button' id='" + streamId +"' onclick='deleteStreamingTime(this)'>Delete</button>";
+	}
+
+	var streamStatTable = document.getElementById("streamStatTable")
+	for (var i = 0, l = streamingStats.length; i < l; i++) 
+	{
+		var obj = streamingStats[i];
+		classdate = obj.class_date
+		time = obj.class_time
+		name = obj.username
+
+		row = streamStatTable.insertRow(i +1)
+		row.insertCell(0).innerHTML = classdate;
+		row.insertCell(1).innerHTML = time;
+		row.insertCell(2).innerHTML = name;
 	}
 
 	//Populate the classlist
@@ -536,6 +569,7 @@ function populatePage(requestData)
 		row.insertCell(2).innerHTML = class_location;
 		row.insertCell(3).innerHTML = spots_taken;
 		row.insertCell(4).innerHTML = "<button type='button' id='" + classdate +"Button' onclick='viewRoster(this)'>View Class Roster</button>";
+		row.insertCell(5).innerHTML = "<button type='button' id='" + classdate +"Button' onclick='cancelClass(this)'>Cancel Class</button>";
 	}
 }
 
@@ -707,6 +741,45 @@ function createStreamingTime()
 	  }
 	}
 	postRequest.send(JSON.stringify(data))
+}
+
+function cancelClass(classbutton)
+{
+	classdate = classbutton.id
+	classdatesplit = classdate.split("B")
+	classdatevalue = classdatesplit[0]
+	url = "https://ww5m5x59lg.execute-api.us-east-2.amazonaws.com/default/any"
+	
+	if(window.confirm("Do you really want to cancel the " + classdatevalue + " class?"))
+	{
+		var postRequest = new XMLHttpRequest()
+		postRequest.open('POST', url, true)
+		postRequest.setRequestHeader('Content-type', 'application/json;charset=UTF-8');
+		postRequest.setRequestHeader('X-Api-Key', parseCookie())
+
+		var data = {
+					"class_date": classdatevalue
+			   };
+		postRequest.onload = function () 
+		{
+		  // Begin accessing JSON data here
+		  var responseData = JSON.parse(this.response)
+
+		  if (postRequest.status >= 200 && postRequest.status < 400) 
+		  {
+		  		alert("Class Canceled!")
+		  		document.getElementById("streamDay").options[0].selected = true
+		  		document.getElementById('streamtime').value = ""
+		  		window.location.reload()
+		  }
+		  else 
+		  {
+		  	alert(postRequest.responseText)
+		  }
+		}
+		postRequest.send(JSON.stringify(data))
+	}
+
 }
 
 

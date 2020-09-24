@@ -61,7 +61,7 @@ def reconcileSubscriptions(authtoken):
         paypal_status = response_json['status']
         if(dbStatus != paypal_status):
             logger.info("Status is different! Local status = " + dbStatus + " paypal_status = " + paypal_status )
-            if(paypal_status == 'CANCELLED'):
+            if(paypal_status != 'ACTIVE'):
                 logger.info(dbUser + " has canceled")
                 updateLocalRecord(dbUser, transaction_date, paypal_status, next_billing_time)
 
