@@ -5,8 +5,7 @@ import jwt
 import pytz
 
 from datetime import datetime, timedelta
-from botocore.exceptions import ClientError
-from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Key, Attr
 from pytz import timezone
 
 
@@ -74,47 +73,26 @@ def lambda_handler(event, context):
             'body': json.dumps('User authorization failed')
         }
     
+    body = json.loads(json_data['body'])
+    classname = body['classname']
+    classtype = body['class_type']
     
     global dynamodb 
     dynamodb = boto3.resource('dynamodb', region_name='us-east-2', endpoint_url="https://dynamodb.us-east-2.amazonaws.com")
     
-    if withinStreamingWindow():
-        
-        #writeStatsForUser(username)
-       
-        table = dynamodb.Table('HighVideoLink')
-        query_response = table.query(
-        KeyConditionExpression=Key('classname').eq('high')
-        )
-
-        for i in query_response['Items']:
-            json_string = json.dumps(i)
-            json_data = json.loads(json_string)
-            
-            url = json_data['url']
-            body = {"url" : url}
-        
-        return {
-            'statusCode': 200,
-            'headers': 
-                 {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin':  '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
-                 },
-            'body': json.dumps(body)
-        }
+    writeStatsForUser(username, classname, classtype)
    
     return {
-    'statusCode': 200,
-    'headers': 
-         {
-            'Access-Control-Allow-Headers': '*',
-            'Access-Control-Allow-Origin':  '*',
-            'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
-         },
-    'body': json.dumps("No Active Stream at this Time")
-    }
+        'statusCode': 200,
+        'headers': 
+             {
+                'Access-Control-Allow-Headers': '*',
+                'Access-Control-Allow-Origin':  '*',
+                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
+             },
+        'body': json.dumps("Bootcamp stats written for user " + username)
+        }
+   
 
 def getCurrentTimePacific():
     utcmoment_naive = datetime.utcnow()
@@ -122,65 +100,44 @@ def getCurrentTimePacific():
     currentTimePacific = utcmoment.astimezone(timezone('US/Pacific'))
     return currentTimePacific
 
-def withinStreamingWindow():
-    print("in withinStreamingWindow")
-    #Get the current time in the Pacific Time Zone
-    global currentTimePacific 
-    global streamTime
+
+def writeStatsForUser(username, classname, classtype):
     currentTimePacific = getCurrentTimePacific()
-    todayDayOfWeek = currentTimePacific.strftime("%A")
-
-    #Get datetime again but this time for the stream - will update shortly
-    stream_naive = datetime.utcnow()
-    stream_moment = stream_naive.replace(tzinfo=pytz.utc)
-    streamStartTime = stream_moment.astimezone(timezone('US/Pacific'))
-
-    print("Looking up times for " + todayDayOfWeek)
-    #Pull streaming times for the current day (if any)
-    table = dynamodb.Table('HighStreamingTimes')
-    query_response = table.query(
-        KeyConditionExpression=Key('day_of_week').eq(todayDayOfWeek)
-    )
-    
-    for i in query_response['Items']:
-            json_string = json.dumps(i)
-            json_data = json.loads(json_string)
-            
-            streamTime = json_data['time_of_day']
-            streamTimeSplit = streamTime.split(':')
-            streamHour = int(streamTimeSplit[0])
-            streamMin = int(streamTimeSplit[1]) 
-            
-            streamStartTime = streamStartTime.replace(hour=streamHour, minute=streamMin)
-            streamStartTime = (streamStartTime - timedelta(minutes=1))
-            cut_off_time = (streamStartTime + timedelta(hours=1, minutes=2))
-            
-            print("found a streaming time for today! " + str(streamStartTime.time()) + " with cutoff " + str(cut_off_time.time()))
-            print("currentTimePacific = " + str(currentTimePacific.time()))
-            
-            if (currentTimePacific.time() >= streamStartTime.time()) and (currentTimePacific.time() < cut_off_time.time()):
-                print("Woo Hoo Active Stream Time!!")
-                return True
-        
-    return False
-
-def writeStatsForUser(username):
     classdate = datetime.strftime(currentTimePacific,"%Y-%m-%d")
+    classTime = datetime.strftime(currentTimePacific,"%H:%M")
+    classHour = datetime.strftime(currentTimePacific,"%H")
     table = dynamodb.Table('HighStreamStats')
     
     query_response = table.query(
-        KeyConditionExpression=Key('username').eq(username)&Key('date').eq(classdate)
+        KeyConditionExpression=Key('username').eq(username),
+        IndexName="username-index",
+        FilterExpression=Attr('class_date').eq(classdate)
     )
     
-    #Only write to the table if you haven't already
-    if(len(query_response['Items']) > 0):
-        return
-
+    for i in query_response['Items']:
+        print("looping!")
+        query_class_type = i['class_type']
+        query_class_time = i['class_time']
+        query_class_name = i['class_name']
+        
+        query_class_split = query_class_time.split(':')
+        query_hour = query_class_split[0]
+        print("query_hour = " + query_hour + " classHour = " + classHour + " query_class_type = " + query_class_type + " classtype = " + classtype +
+        " query_class_name = " + query_class_name + " classname = " + classname)
+        
+        #Don't double record the same class if they hit play multiple times.
+        if query_hour == classHour and query_class_type == classtype and query_class_name == classname:
+            print("found dup - not logging")
+            return
+        
     response = table.put_item(
         Item={
-            'date': str(classdate),
+            'date': str(currentTimePacific),
             'username': username,
-            'class_time': str(streamTime)
+            'class_type': classtype,
+            'class_name': classname,
+            'class_date' : classdate,
+            'class_time' : classTime
         }
     )
 

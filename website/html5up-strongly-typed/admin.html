@@ -176,6 +176,8 @@ body {
 											      <th>Date</th>
 											      <th>Time</th>
 											      <th>User Name</th>
+											      <th>Class Type</th>
+											      <th>Class Name</th>
 											   </tr>
 											</table>	
 								</section>
@@ -515,11 +517,15 @@ function populatePage(requestData)
 		classdate = obj.class_date
 		time = obj.class_time
 		name = obj.username
+		type = obj.class_type
+		classname = obj.class_name
 
 		row = streamStatTable.insertRow(i +1)
 		row.insertCell(0).innerHTML = classdate;
 		row.insertCell(1).innerHTML = time;
 		row.insertCell(2).innerHTML = name;
+		row.insertCell(3).innerHTML = type;
+		row.insertCell(4).innerHTML = classname;
 	}
 
 	//Populate the classlist

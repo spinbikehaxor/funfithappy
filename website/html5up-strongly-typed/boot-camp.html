@@ -10,6 +10,7 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 		<link rel="stylesheet" href="assets/css/main.css" />
+		<script src="https://player.vimeo.com/api/player.js"></script>
 	</head>
 	<body class="no-sidebar is-preload">
 		<div id="page-wrapper">
@@ -59,6 +60,24 @@
 			
 
 		</div>
+<script>
+var iframe = document.querySelector('iframe');
+var player = new Vimeo.Player(iframe);
+var video_title = ""
+
+player.on('loaded', function() {
+	player.getVideoTitle().then(function(title) {
+  		video_title = title;
+  	});
+}); 
+
+player.on('play', function() {
+
+  	saveBootcampStats(video_title)
+   
+});
+    
+</script>
 
 <script>
 window.onload = isLoggedIn()
@@ -102,40 +121,29 @@ function getUserData()
 	document.getElementById("status").textContent="Classes On Demand"
 }
 
-
-
-function getVideoLinks()
+function saveBootcampStats(classname)
 {
 	var postRequest = new XMLHttpRequest()
 
-	postRequest.open('POST', 'https://arr0ts42s8.execute-api.us-east-2.amazonaws.com/default/any', true)
+	postRequest.open('POST', 'https://qt8y1hjn61.execute-api.us-east-2.amazonaws.com/default/any', true)
 	postRequest.setRequestHeader('Content-type', 'application/json;charset=UTF-8');
+	postRequest.setRequestHeader('X-Api-Key', parseCookie())
 	//postRequest.withCredentials = true;
+
+	data = {
+		'classname' : classname,
+		'class_type' : 'Boot Camp'
+	}
 	
 	postRequest.onload = function () 
 	{
 	  // Begin accessing JSON data here
 	  var responseData = JSON.parse(this.response)
-
-	  if (postRequest.status >= 200 && postRequest.status < 400) 
-	  {
-	  		html = '';
-	  		json = JSON.parse(postRequest.responseText);
-	  		for (var i = 0, l = json.length; i < l; i++) 
-	  		{
-    			var obj = json[i];
-    			name = obj.name
-    			link = obj.url.url
-    			html+= "<li><a target='_blank' href=" + link + ">" + name + "</a></li>";
-    		}
-    		html = '<div class="col-6 col-12-small"><ul>' + html + '</ul></div>';
- 			document.getElementById("videolinks").innerHTML = html;
-		}
-	  		//window.location.replace("../index.html")
-	  }
-	  postRequest.send()
-	  document.getElementById("status").textContent="Classes On Demand"
 	}
+
+	postRequest.send(JSON.stringify(data))
+}
+
 
 function isLoggedIn()
 {
@@ -157,7 +165,7 @@ function isLoggedIn()
 function signOut()
 {
 	document.cookie = 'auth=' + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-	window.location.reload();
+	window.location.replace("index.html");
 }
 </script>
 <!-- Scripts -->

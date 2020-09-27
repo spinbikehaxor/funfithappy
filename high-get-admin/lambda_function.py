@@ -7,7 +7,7 @@ import pytz
 import time
 
 from datetime import datetime
-from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Key, Attr
 from pytz import timezone
 
 def isAuthorized(jwt_token):
@@ -112,17 +112,31 @@ def getRecentStreamStats():
     statList = []
     sortedStatList = []
     
-    query_response = table.query(
-        KeyConditionExpression=Key('date').eq(current_date)
+    query_response = table.scan(
+        FilterExpression=Attr('class_date').eq(current_date)
     )
     
     for i in query_response['Items']:
         realname = getAttendeeName(i['username'])
+        class_time = ""
+        class_type = "High"
+        class_name = "Current High Stream"
+        
+        if 'class_time' in i.keys():
+            class_time = i['class_time']
+            
+        if 'class_type' in i.keys():
+            class_type = i['class_type']
+            
+        if 'class_name' in i.keys():
+            class_name = i['class_name']
         
         data = {
-            'class_date' : i['date'],
-            'class_time' : i['class_time'],
-            'username' : realname
+            'class_date' : i['class_date'],
+            'class_time' : class_time,
+            'username' : realname,
+            'class_type' : class_type,
+            'class_name' : class_name
         }
         statList.append(data)
     

@@ -17,6 +17,7 @@
 			  padding: 0;
 			}
 		</style>
+		<script src="https://player.vimeo.com/api/player.js"></script>
 	</head>
 	<body class="no-sidebar is-preload">
 		<div id="page-wrapper">
@@ -80,8 +81,7 @@ Experience more than just a workout! HIGH fitness is simple, intense, consistent
 										</p>
 									</div>
 									<div id="streamingFrame" style="display:none">
-										<!--<video id="video-player" playsinline></video>-->
-										<!--<iframe src="https://iframe.dacast.com/b/153287/c/526605" width="100%" height="700"></iframe>-->
+	
 										<iframe id="highVideoLink" src="" width="100%" height="600" sandbox="allow-scripts allow-forms allow-same-origin allow-top-navigation" allowfullscreen></iframe>
 									</div>
 							
@@ -93,7 +93,7 @@ Experience more than just a workout! HIGH fitness is simple, intense, consistent
 			
 
 		</div>
-<!--<script src="https://player.live-video.net/1.0.0/amazon-ivs-player.min.js"></script> -->
+
 <script>
 
 
@@ -182,6 +182,7 @@ function getGoogleLink()
 	  			document.getElementById("highVideoLink").src = json.url;
 				document.getElementById("streamingFrame").style.display = "block"
 				document.getElementById("scheduledTimes").style.display = "none"
+				setupVimeo()
 	  		}
 	  }
 	  else 
@@ -191,6 +192,48 @@ function getGoogleLink()
 	}
 
 	postRequest.send()
+}
+
+function setupVimeo()
+{
+	var iframe = document.querySelector('iframe');
+	var player = new Vimeo.Player(iframe);
+	var video_title = ""
+
+	player.on('loaded', function() {
+		player.getVideoTitle().then(function(title) {
+	  		video_title = title;
+	  	});
+	}); 
+
+	player.on('play', function() {
+
+	  		saveStats(video_title)
+  
+	});
+}
+
+
+function saveStats(classname)
+{
+	var postRequest = new XMLHttpRequest()
+
+	postRequest.open('POST', 'https://qt8y1hjn61.execute-api.us-east-2.amazonaws.com/default/any', true)
+	postRequest.setRequestHeader('Content-type', 'application/json;charset=UTF-8');
+	postRequest.setRequestHeader('X-Api-Key', parseCookie())
+
+	data = {
+		'classname' : classname,
+		'class_type' : 'High'
+	}
+	
+	postRequest.onload = function () 
+	{
+	  // Begin accessing JSON data here
+	  var responseData = JSON.parse(this.response)
+	}
+
+	postRequest.send(JSON.stringify(data))
 }
 
 
