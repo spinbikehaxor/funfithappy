@@ -209,6 +209,10 @@ def reorderPositions(class_date, reserved, isFree, capacity):
         #Update resSpot for people already in the class
         if classCountIter < capacity:
             resSpot = classCountIter
+
+        #Waitlist cancelation
+        elif classCountIter == capacity and not reserved:
+            resSpot = classCountIter
             
         #If a reservation was cancelled (vs a waitlist) bump the first person up from the waitlist and charge a credit    
         elif classCountIter == capacity and reserved:

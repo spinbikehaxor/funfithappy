@@ -22,7 +22,7 @@ def main():
 	dynamodb = boto3.resource('dynamodb', region_name='us-east-2', endpoint_url="https://dynamodb.us-east-2.amazonaws.com")
 	table = dynamodb.Table('SiteUsers')
 	scan_response = table.scan()
-	oneFreeCreditUsers = ['redtabgirl', 'anita sagastegui', 'domzermeno', 'stefaniecody', 'karen888',  'dianabrownstein', 'sarahruby', 'kathynerin', 'glowing54', 'angelaguidi']
+	oneFreeCreditUsers = ['redtabgirl', 'anita sagastegui', 'domzermeno', 'stefaniecody', 'karen888',  'dianabrownstein', 'sarahruby', 'kathynerin', 'glowing54', 'angelaguidi', 'anniesue03']
 
 	for i in scan_response['Items']:
 		json_string = json.dumps(i)

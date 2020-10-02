@@ -116,7 +116,7 @@ def lambda_handler(event, context):
                 
         credits = getPaidCredits(formatted_username)
         payments = getLivePaymentHistory(formatted_username)
-        classHistory = getLiveClassHistory(formatted_username)
+        classHistory = getClassHistory(formatted_username)
         
         user ={
             'username': json_data['username'],
@@ -180,7 +180,7 @@ def getLivePaymentHistory(username):
     sorted_payments = sorted(transactions, key = lambda i: i['transaction_date'], reverse=True)
     return sorted_payments
     
-def getLiveClassHistory(username):
+def getClassHistory(username):
     table = dynamodb.Table('HighLiveClassSignup')
     classes = []
     sorted_classes = []
@@ -193,7 +193,25 @@ def getLiveClassHistory(username):
     for i in query_response['Items']:
         data = {
             "classdate":i['class_date'],
-            "signup_time":i['signup_time'],
+            "class_type": 'High',
+            "class_name": 'High Live',
+            'class_time': ''
+
+        }
+        classes.append(data)
+
+    table = dynamodb.Table('HighStreamStats')
+    query_response = table.query(
+        KeyConditionExpression=Key('username').eq(username),
+        IndexName="username-index"
+    )
+    #TODO - add clause where only get resposition > 0
+    for i in query_response['Items']:
+        data = {
+            "classdate":i['class_date'],
+            "class_name":i['class_name'],
+            "class_type": i['class_type'],
+            "class_time": i['class_time']
         }
         classes.append(data)
         

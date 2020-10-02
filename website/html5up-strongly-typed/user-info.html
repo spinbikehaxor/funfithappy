@@ -14,6 +14,23 @@
 			input:disabled {
     			color: black;
 			}
+			.scrollingTable {
+	            overflow-y: scroll;
+	            width: 100%;
+	        }
+			.visible-scrollbar::-webkit-scrollbar-thumb {
+			  overflow: -moz-scrollbars-vertical; 
+			  overflow: scroll;
+			  height: 2em;
+			}
+			::-webkit-scrollbar {
+			  -webkit-appearance: none;
+			  width: 7px;
+			}
+			::-webkit-scrollbar-thumb {
+			  background-color: rgba(0, 0, 0, .5);
+			  -webkit-box-shadow: 0 0 1px rgba(255, 255, 255, .5);
+			}
 		</style>
 	</head>
 	<body class="no-sidebar is-preload">
@@ -109,12 +126,15 @@
 									</form>
 								</section>
 							</div>
-							<div class="col-6 col-12-small" id="streaming-link" style="display:none">
+							<div class="col-6 col-12-medium">
+								<section>
+										<div class="row gtr-50">
+											<div class="col-6 col-12-small" id="streaming-link" style="display:none">
 										
-									<a href="high-fitness.html">
-										<span><strong>Approved For Streaming!</strong></span>
-									</a>
-							</div>	
+												<a href="high-fitness.html">
+													<span><strong>Approved For Streaming!</strong></span>
+												</a>
+											</div>	
 											<p>
 										</div>
 									<div class="row gtr-50">
@@ -126,7 +146,7 @@
 										</div>
 									<div class="row gtr-50" id="pay-history-div">
 										<div class="col-6 col-12-medium">
-											<h3>Live Class Payment History</h3>
+											<h3>Live Class Payments</h3>
 											<table id="paymentHistory">
 												   <tr>
 												      <th>Date</th>
@@ -136,26 +156,27 @@
 											</table>
 										</div>
 									</div>
-									<div class="row gtr-50">
-											<div class="col-6 col-12-small">
-										
-												
-											</div>	
-											<p>
-										</div>
-									<div class="row gtr-50" id="class-history-div">
-										<div class="col-6 col-12-medium">
-											<h3>Live Classes Reserved/Attended</h3>
-											<table id="classHistory">
-												   <tr>
-												      <th>Class Date</th>
-												   </tr>
-											</table>
-										</div>
-									</div>
 								</section>
 							</div>
 								
+						</div>
+						<div class="row gtr-50" id="class-history-div"><p></p></div>
+						<div class="row gtr-50" id="class-history-div">
+
+									<div class="col-6 col-12-medium">
+											<h3 id="classHistoryHeader">Class History:</h3>
+											<div class="scrollingTable visible-scrollbar">
+												<table id="streamHistory">
+													   <tr>
+													      <th>Date</th>
+													      <th>Time</th>
+													      <th>Class Type</th>
+													      <th>Class Name</th>
+													   </tr>
+												</table>
+											</div>
+											<p id="scrollHint" style="display:none"><em>Scroll for more</em></p>
+									</div>
 						</div>
 							
 
@@ -182,6 +203,26 @@
 
 
 window.onload = xmlRequest()
+
+
+function makeTableScroll(tablename) 
+{
+	
+    var maxRows = 4;
+
+    var table = document.getElementById(tablename);
+    var wrapper = table.parentNode;
+    var rowsInTable = table.rows.length;
+    var height = 0;
+    if (rowsInTable > maxRows) {
+        for (var i = 0; i < maxRows; i++) {
+            height += table.rows[i].clientHeight;
+        }
+        wrapper.style.height = height + "px";
+        document.getElementById('scrollHint').style.display="block"
+
+    }
+}
 
 function parseCookie()
 {
@@ -233,6 +274,7 @@ function populatePage(requestData)
 	json = JSON.parse(requestData);
 	username = json.username;
 	isTrialPeriod = json.isTrialPeriod
+	var classCounter = 0
 	
 	document.getElementById("username").value = username;
 	document.getElementById("fname").value = json.fname;
@@ -269,21 +311,29 @@ function populatePage(requestData)
 
 	//Fill out Live Class Attendance History
 	classHistoryList = json.classHistory
-	var historyTable = document.getElementById("classHistory");
+	var streamTable = document.getElementById("streamHistory");
 	if(classHistoryList.length > 0)
 	{
-		document.getElementById("classHistory").style.display = "block"
+		document.getElementById("streamHistory").style.display = "block"
 	}
 	for (var i = 0, l = classHistoryList.length; i < l; i++) 
 	{		
+		classCounter = i + 1
+
 		var obj = classHistoryList[i];
 		classdate = obj.classdate
-		signup_time = obj.signup_time
+		class_time = obj.class_time
+		class_type = obj.class_type
+		class_name = obj.class_name
 
-		row = historyTable.insertRow(i +1)
+		row = streamTable.insertRow(i +1)
 		row.insertCell(0).innerHTML = classdate;
-		//row.insertCell(1).innerHTML = signup_time;
+		row.insertCell(1).innerHTML = class_time;
+		row.insertCell(2).innerHTML = class_type;
+		row.insertCell(3).innerHTML = class_name;
 	}
+	document.getElementById("classHistoryHeader").textContent = "Class History: " + classCounter + " Taken"
+	makeTableScroll("streamHistory")
 
 
 	isActive = json.isActiveForStream;
