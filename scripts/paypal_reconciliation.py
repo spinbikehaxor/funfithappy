@@ -4,10 +4,11 @@ import json
 import logging
 import requests
 from boto3.dynamodb.conditions import Attr
-from datetime import datetime
+from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from requests.auth import HTTPBasicAuth
 from botocore.exceptions import ClientError
+
 
 
 logger = logging.getLogger('paypal-reconcile')
@@ -75,6 +76,28 @@ def reconcileSubscriptions(authtoken):
 
         if 'next_billing_time' not in billing_data.keys():
             logger.debug("Looks like an inactive subscription " + paypal_status)
+
+            #Need to get the last payment date to see how much time they have left
+            paypal_last_payment = billing_data['last_payment']
+            lastPaymentSplit = paypal_last_payment['time'].split('T')
+            last_payment_date = lastPaymentSplit[0]
+
+            #Parse date into datetime format
+            lastPaymentDate = datetime.strptime(last_payment_date, '%Y-%m-%d')
+
+            #Add one month:
+            lastPaymentDate = (lastPaymentDate + timedelta(days=31))
+            logger.debug("last_payment time: " + str(lastPaymentDate))
+
+            #Add the Paypal formatting back
+            lastPaymentSplit = str(lastPaymentDate).split(" ")
+            last_payment_date = lastPaymentSplit[0]
+            last_payment_date = last_payment_date + "T10:00:00Z"
+
+            #If they cancel on the day they pay, this is the only way to give them their last month
+            if(str(last_payment_date) != next_billing_time):
+                logger.debug("Updating next_billing_time to " + last_payment_date + " for " + dbUser)
+                updateLocalRecord(dbUser, transaction_date, paypal_status, last_payment_date)
             continue
 
         paypal_next_billing_time = billing_data['next_billing_time']
@@ -247,6 +270,12 @@ def login_to_paypal():
 
     auth_token_param = "Bearer " + token
     return auth_token_param
+
+def getCurrentTimePacific():
+    utcmoment_naive = datetime.utcnow()
+    utcmoment = utcmoment_naive.replace(tzinfo=pytz.utc)
+    currentTimePacific = utcmoment.astimezone(timezone('US/Pacific'))
+    return currentTimePacific
     
 def get_secret(secret_name):
     logger.info("in get_secret")
