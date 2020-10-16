@@ -1,0 +1,379 @@
+<!DOCTYPE HTML>
+<!--
+	Strongly Typed by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+	<head>
+		<title>Analytics</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<link rel="stylesheet" href="assets/jquery.rtResponsiveTables.min.css">
+		<script src="assets/js/jquery.min.js"></script>
+		<script src="assets/js/jquery.dropotron.min.js"></script>
+		<script src="assets/jquery.rtResponsiveTables.min.js" type="text/javascript"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.js" type="text/javascript"></script>
+		<style>
+			.scrollingTable {
+	            overflow-y: scroll;
+	            width: 100%;
+	        }
+			.visible-scrollbar::-webkit-scrollbar-thumb {
+			  overflow: -moz-scrollbars-vertical; 
+			  overflow: scroll;
+			  height: 2em;
+			}
+			::-webkit-scrollbar {
+			  -webkit-appearance: none;
+			  width: 7px;
+			}
+			::-webkit-scrollbar-thumb {
+			  background-color: rgba(0, 0, 0, .5);
+			  -webkit-box-shadow: 0 0 1px rgba(255, 255, 255, .5);
+			}
+		</style>
+	</head>
+	<body class="no-sidebar is-preload">
+		<div id="page-wrapper">
+
+			<!-- Header -->
+				<section id="header">
+					<div class="container">
+
+						<!-- Logo -->
+							<h1 id="logo"><a href="index.html"></a>Annie Cassie Fit</h1>
+							<p>Analytics</p>
+
+						<!-- Nav -->
+							<nav id="nav">
+								<ul>
+									<li><a class="icon solid fa-home" href="home.html"><span>Home</span></a></li>
+									<li><a class="icon solid fa-sitemap" href="user-info.html"><span>Your Account</span></a></li>
+									<li><a class="icon solid fa-sitemap" href="admin.html"><span>Administration</span></a></li>
+									<li>
+										<a href="#" class="icon fa-chart-bar"><span>High Fitness</span></a>
+										<ul>
+											<li><a href="high-live-list.html">Book a Live Class</a></li>
+											<li><a href="high-fitness.html">Online Streaming</a></li>
+										</ul>
+									</li>
+									<li><a class="icon solid fa-retweet" href="boot-camp.html"><span>Boot Camp</span></a></li>
+									<li><a class="icon solid fa-sitemap" href="javascript:signOut()"><span>Sign Out</span></a></li>
+								</ul>
+							</nav>
+
+					</div>
+				</section>
+				<!-- Main -->
+				<section id="main">
+					<div class="container">
+						<div class="row">
+			
+								<section>
+									<h3>High Streaming Totals: Last 30 Days </h3>
+										<div id="highMonthDiv" width="100px" max-width="100px">
+											<canvas id="myChart" width="400" height="400"></canvas>
+										</div>
+										
+								</section>
+								<section>
+									<h3>High Streaming Averages: Last 30 Days </h3>
+										<div id="highAvgDiv" width="100px" max-width="100px">
+											<canvas id="avgPieChart" width="400" height="400"></canvas>
+										</div>
+										
+								</section>
+								<section>
+									<h3 id="subscriptionTitle">Subscriptions: </h3>
+										<div id="subscriberDiv" width="100px" max-width="100px" class="scrollingTable visible-scrollbar">
+											<table id="subscriberTable">
+												<tr>
+											      <th>User</th>
+											      <th>Signup Date</th>
+											      <th>Next Billing Date</th>
+											      <th>Status</th>
+											   </tr>
+											</table>
+										</div>
+										<p id="scrollHint" style="display:none"><em>Scroll for more</em></p>
+								</section>
+						</div>
+						<!-- Footer -->
+				
+					<div id="copyright" class="container">
+						<ul class="links">
+							<li>&copy; Annie Cassie Fit. All rights reserved.</li><li>Design: <a href="http://html5up.net">HTML5 UP</a></li>
+						</ul>
+					</div>
+				</section>
+
+		</div>
+
+		<!-- Scripts -->
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+
+<script>
+$("table").rtResponsiveTables();
+window.onload= getAnalyticsData()
+
+function makeTableScroll(tablename) 
+{
+	
+    var maxRows = 10;
+
+    var table = document.getElementById(tablename);
+    var wrapper = table.parentNode;
+    var rowsInTable = table.rows.length;
+    var height = 0;
+    if (rowsInTable > maxRows) {
+        for (var i = 0; i < maxRows; i++) {
+            height += table.rows[i].clientHeight;
+        }
+        wrapper.style.height = height + "px";
+        document.getElementById('scrollHint').style.display="block"
+
+    }
+}
+
+function parseCookie()
+{
+	jwt = document.cookie.split('; ')
+  	.find(row => row.startsWith('auth'))
+  	.split('=')[1];
+
+  	return jwt;
+}
+
+function getAnalyticsData()
+{
+	//Check if logged in
+	if(document.cookie.length == 0)
+	{
+		window.location.replace("sign-in.html")
+	}
+
+	var postRequest = new XMLHttpRequest()
+	postRequest.open('POST', 'https://bn5c9sxzj6.execute-api.us-east-2.amazonaws.com/default/any', true)
+	postRequest.setRequestHeader('Content-type', 'application/json;charset=UTF-8');
+	postRequest.setRequestHeader('X-Api-Key', parseCookie())
+
+	postRequest.onload = function () 
+	{
+	  // Begin accessing JSON data here
+	  var responseData = JSON.parse(this.response)
+
+	  if (postRequest.status >= 200 && postRequest.status < 400) 
+	  {
+	  		populatePage(postRequest.responseText)
+	  }
+	  else 
+	  {
+	  	alert(postRequest.responseText)
+	  }
+	}
+	postRequest.send()
+}
+
+function populatePage(requestData)
+{
+	json = JSON.parse(requestData);
+
+	highStats = json.highStats
+	populateMonthlyStreamStats(highStats)
+
+	subscriberStats = json.subscriberStats
+	popuplateSubscriberStats(subscriberStats)
+
+	activeCount = json.activeCount
+	document.getElementById("subscriptionTitle").innerText = "Subscriptions: " + activeCount + " Active"
+}
+
+function popuplateSubscriberStats(subscriberStats)
+{
+	var streamStatTable = document.getElementById("subscriberTable")
+	for (var i = 0, l = subscriberStats.length; i < l; i++) 
+	{
+		var obj = subscriberStats[i];
+		user = obj.dbUser
+		signupDate = obj.transaction_date
+		nextBillingDate = obj.next_billing_time
+		status = obj.dbStatus
+
+		row = streamStatTable.insertRow(i +1)
+		row.insertCell(0).innerHTML = user;
+		row.insertCell(1).innerHTML = signupDate;
+		row.insertCell(2).innerHTML = nextBillingDate;
+		row.insertCell(3).innerHTML = status;
+	}
+
+	makeTableScroll("subscriberTable")
+
+}
+
+function populateMonthlyStreamStats(highStats)
+{
+	var ctx = document.getElementById('myChart');
+
+	//This list shows the numeric ordering of Python days of the week, so we can show correct labels
+	daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+	streamKeys = []
+	streamCounts = []
+	averageCounts = []
+
+	for(l = 0; l < highStats.length; l++)
+	{
+		obj = highStats[l]
+		count = obj[1]["count"]
+		avgCount = obj[1]["average"]
+
+		var keySplit = obj[0].split(":")
+		var dayNum = keySplit[0]
+		var hourNum = keySplit[1]
+
+		var streamCount = obj[1]["count"]
+		var avgCount = obj[1]["average"]
+		console.log(daysOfWeek[dayNum] + " " + hourNum + " = " + streamCount);
+
+		//Create a dictionary object mapping days/times to stream counts
+		streamKeys.push(daysOfWeek[dayNum] + " " + hourNum)
+		streamCounts.push(streamCount)
+		averageCounts.push(avgCount)
+	}
+
+	//This loop is necessary because the filter can't cleanly remove the corresponding key for a 1 count
+	for(i = 0; i < streamKeys.length; i++)
+	{
+		//Remove false "plays" where people open their laptops with the last video still open
+		if(streamCounts[i] == 1)
+		{
+			delete streamCounts[i]
+			delete streamKeys[i]
+			delete averageCounts[i]
+		}
+	}
+
+	//And we still need the filters because the loop above leaves "undefined". Messy, but it's fast so it's ok.
+	streamKeys = streamKeys.filter(function (el) {
+	  return el != null;
+	});
+
+	streamCounts = streamCounts.filter(function (el) {
+	  return el != null & el > 1;
+	});
+	averageCounts = averageCounts.filter(function (el) {
+	  return el != null & el > 1;
+	});
+	createChart(streamKeys, streamCounts)
+	createAveragePieChart(streamKeys, averageCounts)
+}
+
+function createChart(streamKeys, streamCounts)
+{
+	var ctx = document.getElementById('myChart');
+	var myChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: streamKeys,
+        datasets: [{
+            label: '# of Plays',
+            data: streamCounts,
+            backgroundColor: [
+                'rgba(255, 99, 132, 0.2)',
+                'rgba(54, 162, 235, 0.2)',
+                'rgba(255, 206, 86, 0.2)',
+                'rgba(75, 192, 192, 0.2)',
+                'rgba(153, 102, 255, 0.2)',
+                'rgba(255, 159, 64, 0.2)',
+                'rgba(54, 162, 235, 0.2)',
+                'rgba(255, 206, 86, 0.2)',
+                'rgba(75, 192, 192, 0.2)',
+                'rgba(153, 102, 255, 0.2)',
+                'rgba(255, 159, 64, 0.2)'
+            ],
+            borderColor: [
+                'rgba(255, 99, 132, 1)',
+                'rgba(54, 162, 235, 1)',
+                'rgba(255, 206, 86, 1)',
+                'rgba(75, 192, 192, 1)',
+                'rgba(153, 102, 255, 1)',
+                'rgba(255, 159, 64, 1)',
+                'rgba(54, 162, 235, 1)',
+                'rgba(255, 206, 86, 1)',
+                'rgba(75, 192, 192, 1)',
+                'rgba(153, 102, 255, 1)',
+                'rgba(255, 159, 64, 1)'
+            ],
+            borderWidth: 1
+        }]
+    },
+    options: {
+        scales: {
+            yAxes: [{
+                ticks: {
+                    beginAtZero: true
+                }
+            }]
+        }
+    }
+});
+}
+
+function createAveragePieChart(streamKeys, streamAverages)
+{
+	var ctx = document.getElementById("avgPieChart")
+	var myPieChart = new Chart(ctx, 
+	{
+	    type: 'pie',
+	    data :
+	    {
+		    datasets: [{
+		    	label: 'Average Plays',
+		        data: streamAverages,
+		        backgroundColor: [
+                'rgba(255, 99, 132, 0.2)',
+                'rgba(54, 162, 235, 0.2)',
+                'rgba(255, 206, 86, 0.2)',
+                'rgba(75, 192, 192, 0.2)',
+                'rgba(153, 102, 255, 0.2)',
+                'rgba(255, 159, 64, 0.2)',
+                'rgba(54, 162, 235, 0.2)',
+                'rgba(255, 206, 86, 0.2)',
+                'rgba(75, 192, 192, 0.2)',
+                'rgba(153, 102, 255, 0.2)',
+                'rgba(255, 159, 64, 0.2)'
+	            ],
+	            borderColor: [
+                'rgba(255, 99, 132, 1)',
+                'rgba(54, 162, 235, 1)',
+                'rgba(255, 206, 86, 1)',
+                'rgba(75, 192, 192, 1)',
+                'rgba(153, 102, 255, 1)',
+                'rgba(255, 159, 64, 1)',
+                'rgba(54, 162, 235, 1)',
+                'rgba(255, 206, 86, 1)',
+                'rgba(75, 192, 192, 1)',
+                'rgba(153, 102, 255, 1)',
+                'rgba(255, 159, 64, 1)'
+	            ],
+	            borderWidth: 1
+		    }],
+
+		    // These labels appear in the legend and in the tooltips when hovering different arcs
+		    labels: streamKeys
+		   
+		}
+
+	});
+}
+
+
+</script>
+
+
+</body>
+</html>

@@ -35,6 +35,11 @@ def isAuthorized(jwt_token):
             
             global username 
             username = payload['username']
+            
+            if username not in ('dianatest', 'casshighfit', 'anniesouter'):
+                print("User is not an admin")
+                return False
+                
         except (jwt.DecodeError, jwt.ExpiredSignatureError) as e:
             print("got decoding error!" + str(e))
             return False
@@ -75,18 +80,54 @@ def lambda_handler(event, context):
         }
         
     global dynamodb 
+    global activeCount
+    activeCount = 0
     dynamodb = boto3.resource('dynamodb', region_name='us-east-2', endpoint_url="https://dynamodb.us-east-2.amazonaws.com")
-    getHighStreamStatsPastMonth()
+    
+    streamTimeStats = getHighStreamStatsPastMonth()
+    subscriberStats = getSubscriberStats();
+    
+    data = {
+        "highStats"         : streamTimeStats,
+        "subscriberStats"   : subscriberStats,
+        "activeCount"       : activeCount
+    }
+    
+    return {
+        'statusCode': 200,
+            'headers': {
+                'Access-Control-Allow-Headers': '*',
+                'Access-Control-Allow-Origin':  '*',
+                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
+            },
+            'body': json.dumps(data)
+    }
+    
+def getUserFullName(username):
+    table = dynamodb.Table('SiteUsers')
+    query_response = table.query(
+        KeyConditionExpression=Key('username').eq(username)
+    )
+    for i in query_response['Items']:
+        fname = i['fname']
+        lname = i['lname']
+        
+        fullname = fname + " " + lname
+        return fullname
         
 def getHighStreamStatsPastMonth():
    
     streamTimeStats = {}
+    averageStats = {}
+    classes_counted = []
+    
     current_date = getCurrentTimePacific()
-    start_date = (current_date - timedelta(days=30)).strftime( "%Y-%m-%d")
+    start_date = (current_date - timedelta(days=30)).strftime("%Y-%m-%d")
+    print("start_date: " + start_date)
     table = dynamodb.Table('HighStreamStats')
   
     scan_response = table.scan(
-        FilterExpression=Attr('class_date').gte(start_date) and Attr('class_type').eq('High')
+        FilterExpression=Attr('class_date').gte(start_date) and Attr('class_type').eq("High")
     )
     
     for i in scan_response['Items']:
@@ -98,22 +139,62 @@ def getHighStreamStatsPastMonth():
         class_datetime = parser.parse(class_date)
         dayOfWeekNum = class_datetime.weekday()
         
-        if dayOfWeekNum not in streamTimeStats.keys():
-            streamTimeStats[dayOfWeekNum] = {
-                        classHour: 1
+        if str(dayOfWeekNum) + ":" + classHour not in streamTimeStats.keys():
+            streamTimeStats[str(dayOfWeekNum) + ":" + classHour] = {
+                        "count": 1,
+                        "class_count" : 1,
+                        "average" : 1
                     }
+            classes_counted.append(class_date + classHour)
         else:
-            dayStats = streamTimeStats[dayOfWeekNum]
+            dayStats = streamTimeStats[str(dayOfWeekNum) + ":" + classHour]
+            dayStats["count"] = dayStats["count"] + 1
             
-            #If the class Hour is already in there, increase the count by 1
-            if classHour in dayStats.keys():
-                dayStats[classHour] = dayStats[classHour] + 1
+            if class_date + classHour not in classes_counted:
+                dayStats["class_count"] = dayStats["class_count"] + 1
+                classes_counted.append(class_date + classHour)
                 
-            else:
-                dayStats[classHour] = 1
+            avgCount = dayStats["count"] / dayStats["class_count"]
+            dayStats["average"] = avgCount
             
-        print(str(streamTimeStats))
+    print("classes_counted: " + str(classes_counted))
+    sortedStats = sorted(streamTimeStats.items())
+    
+    return sortedStats
         
+def getSubscriberStats():
+    table = dynamodb.Table('HighPayment')
+    scan_response = table.scan()
+    
+    global activeCount
+    
+    users = []
+    sortedUsers = []
+    
+    for i in scan_response['Items']:
+        json_string = json.dumps(i)
+        json_data = json.loads(json_string)
+        
+        transaction_date =  parseDate(json_data['transaction-date'], ' ')
+        next_billing_time = parseDate(json_data['next_billing_time'], 'T')
+        dbStatus = json_data['status']
+        if dbStatus == "ACTIVE":
+            activeCount = activeCount + 1
+        
+        data = {
+            "dbUser" : getUserFullName(json_data['username']),
+            "transaction_date" : transaction_date,
+            "next_billing_time" : next_billing_time,
+            "dbStatus" : dbStatus
+        }
+        users.append(data)
+    sortedUsers = sorted(users, key = lambda i: i['transaction_date'], reverse=True)
+    return sortedUsers
+
+def parseDate(paypalDate, delimeter):
+    transSplit = paypalDate.split(delimeter)
+    trans_date = transSplit[0]
+    return trans_date
 
 def getCurrentTimePacific():
     utcmoment_naive = datetime.utcnow()
