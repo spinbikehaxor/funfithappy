@@ -81,7 +81,10 @@ def lambda_handler(event, context):
         
     global dynamodb 
     global activeCount
+    global totalStreamCount
     activeCount = 0
+    totalStreamCount = 0
+    
     dynamodb = boto3.resource('dynamodb', region_name='us-east-2', endpoint_url="https://dynamodb.us-east-2.amazonaws.com")
     
     streamTimeStats = getHighStreamStatsPastMonth()
@@ -90,7 +93,8 @@ def lambda_handler(event, context):
     data = {
         "highStats"         : streamTimeStats,
         "subscriberStats"   : subscriberStats,
-        "activeCount"       : activeCount
+        "activeCount"       : activeCount,
+        "totalStreamCount"  : totalStreamCount
     }
     
     return {
@@ -120,6 +124,7 @@ def getHighStreamStatsPastMonth():
     streamTimeStats = {}
     averageStats = {}
     classes_counted = []
+    global totalStreamCount
     
     current_date = getCurrentTimePacific()
     start_date = (current_date - timedelta(days=30)).strftime("%Y-%m-%d")
@@ -129,6 +134,9 @@ def getHighStreamStatsPastMonth():
     scan_response = table.scan(
         FilterExpression=Attr('class_date').gte(start_date) and Attr('class_type').eq("High")
     )
+    
+    totalStreamCount = len(scan_response['Items'])
+    print("total streams: " + str(totalStreamCount))
     
     for i in scan_response['Items']:
         class_date = i['class_date']
@@ -154,7 +162,7 @@ def getHighStreamStatsPastMonth():
                 dayStats["class_count"] = dayStats["class_count"] + 1
                 classes_counted.append(class_date + classHour)
                 
-            avgCount = dayStats["count"] / dayStats["class_count"]
+            avgCount = round(dayStats["count"] / dayStats["class_count"], 2)
             dayStats["average"] = avgCount
             
     print("classes_counted: " + str(classes_counted))
