@@ -60,7 +60,8 @@
 											      <th>Date</th>
 											      <th>Time</th>
 											      <th>Location</th>
-											      <th>Open Spots</th>
+											      <th>Type</th>
+											      <th>Spots</th>
 											      <th></th>
 											   </tr>
 											</table>
@@ -139,6 +140,7 @@ function getClassData()
     			spots_taken = obj.spots_taken
     			waitspot = obj.waitSpot
     			isFree = obj.isFree
+    			class_type = obj.class_type
 
     			remaining_spots = capacity - spots_taken
     			if(remaining_spots < 0)
@@ -150,31 +152,32 @@ function getClassData()
     			row.insertCell(0).innerHTML = classdate;
     			row.insertCell(1).innerHTML = time;
     			row.insertCell(2).innerHTML = display_name;
-    			row.insertCell(3).innerHTML = remaining_spots;
+    			row.insertCell(3).innerHTML = class_type;
+    			row.insertCell(4).innerHTML = remaining_spots;
 
     			if(reserved == 'reserved')
     			{
-    				row.insertCell(4).innerHTML = "<button type='button' disabled='true' id=" + classdate +" onclick='reserveClass(this)'>You're In!</button>";
-    				row.insertCell(5).innerHTML = "<button type='button' id=" + classDateTime +" onclick='cancelClass(this)'>Cancel</button>";
+    				row.insertCell(5).innerHTML = "<button type='button' disabled='true' id=" + classdate +" onclick='reserveClass(this)'>You're In!</button>";
+    				row.insertCell(6).innerHTML = "<button type='button' id=" + classDateTime +" onclick='cancelClass(this)'>Cancel</button>";
     			}
     			else if(reserved == 'waitlisted')
     			{
-    				row.insertCell(4).innerHTML = "<button type='button' disabled='true' id=" + classdate +" onclick='reserveClass(this)'>Waitlist # " + waitspot + "</button>";
-    				row.insertCell(5).innerHTML = "<button type='button' id=" + classDateTime +" onclick='cancelClass(this)'>Cancel</button>";
+    				row.insertCell(5).innerHTML = "<button type='button' disabled='true' id=" + classdate +" onclick='reserveClass(this)'>Waitlist # " + waitspot + "</button>";
+    				row.insertCell(6).innerHTML = "<button type='button' id=" + classDateTime +" onclick='cancelClass(this)'>Cancel</button>";
     			}
     			else
     			{
     				if(remaining_spots == 0)
     				{
-    					row.insertCell(4).innerHTML = "<button type='button' id=" + classdate +" onclick='reserveClass(this)'>Join Wait list</button>";
+    					row.insertCell(5).innerHTML = "<button type='button' id=" + classdate +" onclick='reserveClass(this)'>Join Wait list</button>";
     				}
     				else if(isFree == "True")
     				{
-    					row.insertCell(4).innerHTML = "<button type='button' id=" + classdate +" onclick='reserveClass(this)'>Sign Up Free Class</button>";
+    					row.insertCell(5).innerHTML = "<button type='button' id=" + classdate +" onclick='reserveClass(this)'>Sign Up Free Class</button>";
     				}
     				else
     				{
-    					row.insertCell(4).innerHTML = "<button type='button' id=" + classdate +" onclick='reserveClass(this)'>Sign Up</button>";
+    					row.insertCell(5).innerHTML = "<button type='button' id=" + classdate +" onclick='reserveClass(this)'>Sign Up</button>";
     				}
     				
     			}

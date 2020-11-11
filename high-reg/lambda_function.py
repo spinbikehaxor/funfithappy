@@ -10,6 +10,7 @@ import requests
 import django
 import pytz
 
+from boto3.dynamodb.conditions import Key
 from django.contrib.auth import password_validation
 from django.core.exceptions import ValidationError
 from django.conf import settings
@@ -27,6 +28,7 @@ def lambda_handler(event, context):
     json_data = json.loads(json_string)
     body = json.loads(json_data['body'])
     isValidPhone = False
+    referred_by = ""
     
     if 'username' not in body.keys():
         print("No creds received")
@@ -48,6 +50,11 @@ def lambda_handler(event, context):
         phone = body['phone']
         preferredContact = body['preferredContact']
         captcha = body['captcha']
+        if 'referred_by' in body.keys():
+            referred_by = body['referred_by']
+            if referred_by != "":
+                referred_by = referred_by.lower().strip()
+
 
     try:
         formattedPhone = phonenumbers.parse(phone, "US")
@@ -169,11 +176,15 @@ def lambda_handler(event, context):
             'email': html.escape(email),
             'phone': html.escape(phone),
             'preferredContact': html.escape(preferredContact),
-            'created_date' : str(getCurrentTimePacific())
+            'created_date' : str(getCurrentTimePacific()),
+            'referred_by' : referred_by
         }
     )
         
-    print(response)
+    #Apply New Member and Referral Promos
+    applyPromo(formatted_username, "new_member")
+    if isValidReferral(referred_by):
+        applyPromo(referred_by, "referral")
     
     return {
         'statusCode': 200,
@@ -184,6 +195,41 @@ def lambda_handler(event, context):
         },
         'body': json.dumps('Participant written to DynamoDB!')
     }
+
+def isValidReferral(referred_by):
+    print("in isValidReferral")
+    if not referred_by or referred_by == "":
+        return False
+
+    dynamodb = boto3.resource('dynamodb', region_name='us-east-2', endpoint_url="https://dynamodb.us-east-2.amazonaws.com")
+    table = dynamodb.Table('SiteUsers')
+    query_response = table.query(
+        KeyConditionExpression=Key('username').eq(referred_by)
+        )
+    if len(query_response['Items']) > 0:
+        print("looks like a valid referral!")
+        return True
+    else:
+        print("Bad username - can't apply referral credit")
+        return False
+
+    
+def applyPromo(username, promo_id):
+    print("Calling HighApplyPromoCredits")
+
+    client = boto3.client('lambda')
+
+    data = {
+        'username' : username,
+        'promo_id' : promo_id
+    }
+    payload = json.dumps(data).encode('utf-8')
+    response = client.invoke(  
+        FunctionName='HighApplyPromoCredits',
+        InvocationType='Event',
+        LogType='Tail',
+        Payload=payload
+    )
 
 def isValidCaptcha(captcha):
     print("in validateCaptcha")

@@ -99,6 +99,7 @@ def getClasses():
     resSpot = 0
     waitSpot = 0
     isFree = False
+    class_type = "High"
     user_class_list = getUserClasses()
     
     #TODO: Adjust for timezone
@@ -115,6 +116,7 @@ def getClasses():
             continue
         
         isFree = False
+        class_type = "High"
         class_date = i['class_date']
         reserved = None
         
@@ -136,6 +138,9 @@ def getClasses():
         if 'isFree' in i.keys():
             print("db value of isFree for class " + class_date + " is " + i['isFree'] )
             isFree = i['isFree']
+            
+        if 'class_type' in i.keys():
+            class_type = i['class_type']
         
         spots_taken = 0
         location_data = getLocationDetails(i['location'])
@@ -149,7 +154,8 @@ def getClasses():
             "spots_taken":str(spots_taken),
             "res_spot": resSpot,
             "waitSpot": waitSpot,
-            "isFree": isFree    
+            "isFree": isFree,
+            "class_type" : class_type    
         }
             
         class_data.update(location_data)

@@ -194,6 +194,7 @@ body {
 											      <th>Date / Time</th>
 											      <th>Spots Taken</th>
 											      <th>Location</th>
+											      <th>Type</th>
 											      <th></th>
 											   </tr>
 									
@@ -265,6 +266,14 @@ body {
 											<div class="col-6 col-12-small">
 												<input type="checkbox" id="isFree" name="isFree" value="True" />
 												<label for="isFree">Free Class</label>
+											</div>
+											<div class="col-6 col-12-small">
+												<select name="class_type" id="class_type" placeholder="Class Type" class="select-css">
+												<option value="placeholder" disabled selected>Pick Class Type</option>
+												<option value="High">High</option>
+												<option value="High-Low">High-Low</option>
+												<option value="Boot Camp">Boot Camp</option>
+											</select>
 											</div>
 											<div class="col-6 col-12-small">
 												<input name="postdate" id="postdate" placeholder="Post Date (2020-08-20)" type="text" maxlength="10" />
@@ -669,6 +678,7 @@ function populatePage(requestData)
 		classDateTime = classdate + " " + time
 		spots_taken = obj.spots_taken
 		class_location = obj.location
+		class_type = obj.class_type
 		roster = obj.roster;
 
 		var classDiv = document.createElement("div")
@@ -709,12 +719,13 @@ function populatePage(requestData)
 		row.insertCell(1).innerHTML = spots_taken;
 		var locCell = row.insertCell(2)
 		locCell.appendChild(locLink)
+		row.insertCell(3).innerHTML = class_type
 
 		//var locationCell = row.insertCell(2);
 		//locationCell.appendChild(locsec);
 
-		row.insertCell(3).innerHTML = "<button type='button' id='" + classdate +"Button' onclick='viewRoster(this)'>View Class Roster</button>";
-		row.insertCell(4).innerHTML = "<button type='button' id='" + classdate +"Button' onclick='cancelClass(this)'>Cancel Class</button>";
+		row.insertCell(4).innerHTML = "<button type='button' id='" + classdate +"Button' onclick='viewRoster(this)'>View Class Roster</button>";
+		row.insertCell(5).innerHTML = "<button type='button' id='" + classdate +"Button' onclick='cancelClass(this)'>Cancel Class</button>";
 	}
 }
 
@@ -757,6 +768,7 @@ function postLiveCLass()
   		"isFree"			: isFreeString,
   		"post_date"			: document.getElementById('postdate').value,
   		"post_time"			: document.getElementById('posttime').value,
+  		"class_type"		: document.getElementById('class_type').value
 	};
 
 	postRequest.open('POST', 'https://716b9237t4.execute-api.us-east-2.amazonaws.com/default/any', true)

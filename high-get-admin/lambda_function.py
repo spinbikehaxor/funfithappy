@@ -152,6 +152,7 @@ def getUpcomingClasses():
     currentTimePacific = getCurrentTimePacific()
     current_year = currentTimePacific.strftime( "%Y")
     current_date = currentTimePacific.strftime( "%Y-%m-%d")
+    class_type = "High"
     
     #TODO: Adjust for timezone
     query_response = table.query(
@@ -166,9 +167,13 @@ def getUpcomingClasses():
         timevalue_12hour = time.strftime( "%-I:%M %p", t )
         roster = getClassRoster(class_date)
         
+        if 'class_type' in i.keys():
+            class_type = i['class_type']
+        
         data = {
             'class_date' : class_date,
             'class_time' : timevalue_12hour,
+            'class_type' : class_type,
             'location' : i['location'],
             'spots_taken': str(i['spots_taken']),
             'roster' : roster

@@ -102,12 +102,21 @@ def saveClass(body):
     location = html.escape(body['location']).strip()
     class_time = html.escape(body['class_time']).strip()
     isFree = html.escape(body['isFree']).strip()
+    post_date = html.escape(body['post_date'].lower().strip())
+    post_time = html.escape(body['post_time']).strip()
+    class_type = html.escape(body['class_type']).strip()
     
     if len(class_time) != 5:
         return "ERROR: Please enter the class time in Hour:Minute format using 24 hour time (i.e. 17:00, 01:00, etc.)"
     
     if len(date) != 10:
         return "ERROR: Please enter the class date in Year-Month-Day format (i.e. 2020-08-01)"
+        
+    if len(post_time) != 5:
+        return "ERROR: Please enter the posting time in Hour:Minute format using 24 hour time (i.e. 17:00, 01:00, etc.)"
+    
+    if len(post_date) != 10:
+        return "ERROR: Please enter the posting date in Year-Month-Day format (i.e. 2020-08-01)"
 
     #Create date and time objects just to see if data is correctly formatted
     try:
@@ -119,10 +128,24 @@ def saveClass(body):
         return "ERROR: Please enter the class date in Year-Month-Day format (i.e. 2020-08-01)"
         
     try:
+        postdate = datetime.strptime(post_date,"%Y-%m-%d")
+        postyearsplit = post_date.split("-")
+        postyear = postyearsplit[0]
+    except ValueError as e:
+        print(str(e))
+        return "ERROR: Please enter the posting date in Year-Month-Day format (i.e. 2020-08-01)"
+        
+    try:
         t = time.strptime(class_time, "%H:%M")
     except ValueError as e:
         print(str(e))
         return "ERROR: Please enter the class time in Hour:Minute format using 24 hour time (i.e. 17:00, 01:00, etc.)"
+        
+    try:
+        t = time.strptime(post_time, "%H:%M")
+    except ValueError as e:
+        print(str(e))
+        return "ERROR: Please enter the posting time in Hour:Minute format using 24 hour time (i.e. 17:00, 01:00, etc.)"
     
     
     response = table.put_item(
@@ -132,7 +155,10 @@ def saveClass(body):
             'class_time': class_time,
             'location' : location,
             'spots_taken' : 0,
-            'isFree' : isFree
+            'isFree' : isFree,
+            'post_date' : post_date,
+            'post_time' : post_time,
+            'class_type' : class_type
         }
     )
     

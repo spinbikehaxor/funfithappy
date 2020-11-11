@@ -74,6 +74,9 @@
 											<div class="col-6 col-12-small">
 												<input name="confpwd" id="confpwd" placeholder="Confirm Password" type="password" />
 											</div>
+											<div class="col-6 col-12-small">
+												<input name="referral" id="referral" placeholder="Referral User ID (Optional)" type="text" />
+											</div>
 											<div class="g-recaptcha" data-sitekey="6Le_6sQZAAAAAIMXhgP1Lzfx7zymbHlJ5a0dGOPg"></div>
 											<div class="col-12">
 												<a href="javascript:xmlRequest()" class="form-button-submit button icon solid fa-envelope">Submit</a>
@@ -138,7 +141,8 @@ function xmlRequest()
   		"email"				: document.getElementById('email').value,
   		"preferredContact"	: document.getElementById('prefContact').value,
   		"phone"				: document.getElementById('phone').value,
-  		"captcha"			: v
+  		"captcha"			: v,
+  		"referred_by"		: document.getElementById('referral').value
 	};
 
 	postRequest.open('POST', 'https://mswp3lsdrl.execute-api.us-east-2.amazonaws.com/default/any', true)

@@ -138,6 +138,7 @@ def checkForMissingPayments(authtoken):
 
         #This means it's not a subscription
         if 'paypal_reference_id_type' not in transaction.keys():
+            checkForMissingLivePayments(transaction['transaction_id'], authtoken)
             continue
 
         transaction_type = transaction['paypal_reference_id_type']
@@ -158,6 +159,38 @@ def checkForMissingPayments(authtoken):
             #If missing, email your damn self to fix this shit! Can't just insert because the name/email might not match
             else: 
                sendEmail(subscription_id)
+
+def checkForMissingLivePayments(transactionId, authtoken):
+    logger.info("in checkForMissingLivePayments - looking for capture " + transactionId)
+    dynamodb = boto3.resource('dynamodb', region_name='us-east-2', endpoint_url="https://dynamodb.us-east-2.amazonaws.com")
+    table = dynamodb.Table('HighLivePayment')
+
+    #Search returns the captureId (lame!). We need the order Id, so grab it...
+    url = "https://api.paypal.com/v2/payments/captures/" + transactionId
+    headers = {'Content-Type': 'application/json', 'Authorization': authtoken }
+    r= requests.get(url, headers=headers)
+    response_json = json.loads(r.text)
+
+    for i in response_json['links']:
+        linkType = i['rel']
+        if linkType == "up":
+            transactionLink = i['href']
+            transactionStringSplit = transactionLink.split('orders/')
+            transactionId = transactionStringSplit[1]
+            logger.info("found orderId " + transactionId + " checking if captured")
+
+            scan_response = table.scan(
+                FilterExpression=Attr('paypal_order_id').eq(transactionId)
+                )
+
+            if(len(scan_response['Items']) > 0):
+                logger.info("found " + transactionId)
+                continue #We've got this one - yay!
+
+            else: 
+               sendEmail(transactionId)
+
+
 
 
 def sendEmail(subscription_id):
