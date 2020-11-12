@@ -7,7 +7,7 @@ import pytz
 
 from datetime import datetime, timedelta
 from pytz import timezone
-from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Key, Attr
 from botocore.exceptions import ClientError
 
 def isAuthorized(jwt_token):
@@ -47,7 +47,9 @@ def lambda_handler(event, context):
     headers = json_data['headers']
     body = json_data['body']
     body_json = json.loads(body)
+    print("body_json = " + str(body_json))
     class_date = body_json['class_date']
+    class_type = body_json['class_type']
 
     #Date comes from client with time appended. Strip that off
     classDateSplit = class_date.split("/")
@@ -84,7 +86,7 @@ def lambda_handler(event, context):
     global dynamodb
     dynamodb = boto3.resource('dynamodb', region_name='us-east-2', endpoint_url="https://dynamodb.us-east-2.amazonaws.com")
 
-    class_details = getClassDetails(classDateString)
+    class_details = getClassDetails(classDateString, class_type)
     isFree = class_details['isFree']
 
     #Let free classes be canceled at any time
@@ -100,7 +102,7 @@ def lambda_handler(event, context):
                 'body': json.dumps("Cannot Cancel Within 3 Hours of Class")
             }
     
-    cancelReservation(classDateString, isFree, class_details['capacity'])
+    cancelReservation(class_details['class_date'], isFree, class_details['capacity'])
     
     return {
         'statusCode': 200,
@@ -139,10 +141,11 @@ def withinCancelWindow(class_date, classtime):
     
     
 def cancelReservation(class_date, isFree, capacity):
-    print("in cancelReservation")
+    print("in cancelReservation, class_date = " + class_date)
     table = dynamodb.Table('HighLiveClassSignup')
     userformatted = username.lower().strip()
     reserved = False
+    print("cancelling class for " + userformatted)
     
     #Get the positions first so can update the roster
     query_response = table.query(
@@ -191,7 +194,7 @@ def reorderPositions(class_date, reserved, isFree, capacity):
         reservationList.append(data)
     sorted_reservations = sorted(reservationList, key = lambda i: i['signup_time'])
     
-    print (len(sorted_reservations))
+    #print (len(sorted_reservations))
     
     #Loop through sorted list and update the roster numbers
     i = 0
@@ -200,7 +203,7 @@ def reorderPositions(class_date, reserved, isFree, capacity):
         classCountIter = i + 1
         
         reservation = sorted_reservations[i]
-        print(str(reservation))
+        #print(str(reservation))
         resSpot = 0
         waitSpot = 0
         
@@ -273,8 +276,8 @@ def decrementSpotsTaken(class_date):
     dynamodb = boto3.resource('dynamodb', region_name='us-east-2', endpoint_url="https://dynamodb.us-east-2.amazonaws.com")
     table = dynamodb.Table('HighClasses')
     
-    classDateObj = datetime.strptime(class_date, '%Y-%m-%d')
-    class_year = classDateObj.strftime( "%Y")
+    classDateSplit = class_date.split("-")
+    class_year = classDateSplit[0]
     
     try:
         response = table.update_item(
@@ -300,8 +303,8 @@ def decrementSpotsTaken(class_date):
     else:
         return response
 
-def getClassDetails(class_date):
-    print("in getClassDetails " + class_date)
+def getClassDetails(class_date, class_type):
+    print("in getClassDetails " + class_date + " " + class_type)
     #Step 1: Get Location
     table = dynamodb.Table('HighClasses')
     location = ''
@@ -311,13 +314,14 @@ def getClassDetails(class_date):
     class_time = ''
   
     response = table.query(
-        KeyConditionExpression=Key('class_year').eq(class_year) & Key('class_date').eq(class_date)
+        KeyConditionExpression=Key('class_year').eq(class_year) & Key('class_date').begins_with(class_date),
+        FilterExpression=Attr('class_type').begins_with(class_type)
     )
-    
     
     for i in response['Items']:
         location = i['location']
         class_time = i['class_time']
+        class_date_full = i['class_date']
         if 'isFree' in i.keys():
             isFreeString = i['isFree']
             if isFreeString == "True":
@@ -337,7 +341,8 @@ def getClassDetails(class_date):
         'location' : location,
         'capacity' : capacity,
         'isFree' : isFree,
-        'class_time' : class_time
+        'class_time' : class_time,
+        'class_date': class_date_full
     }
     return data
 

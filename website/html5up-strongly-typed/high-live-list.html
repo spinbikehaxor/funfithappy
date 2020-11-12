@@ -87,6 +87,9 @@ $("table").rtResponsiveTables();
 
 window.onload = getClassData()
 
+var classtypes = []
+var classDateTimes = []
+
 function parseCookie()
 {
 	if(document.cookie.length > 0)
@@ -141,6 +144,12 @@ function getClassData()
     			waitspot = obj.waitSpot
     			isFree = obj.isFree
     			class_type = obj.class_type
+    			console.log("class_type = " + class_type)
+
+    			classtypes[i] = class_type
+    			classDateTimes[i]= classDateTime
+
+    			reserve_data = classdate + "_" + class_type
 
     			remaining_spots = capacity - spots_taken
     			if(remaining_spots < 0)
@@ -157,27 +166,27 @@ function getClassData()
 
     			if(reserved == 'reserved')
     			{
-    				row.insertCell(5).innerHTML = "<button type='button' disabled='true' id=" + classdate +" onclick='reserveClass(this)'>You're In!</button>";
-    				row.insertCell(6).innerHTML = "<button type='button' id=" + classDateTime +" onclick='cancelClass(this)'>Cancel</button>";
+    				row.insertCell(5).innerHTML = "<button type='button' disabled='true' id=" + reserve_data +" onclick='reserveClass(this)'>You're In!</button>";
+    				row.insertCell(6).innerHTML = "<button type='button'  onclick='cancelClass(" + i + ")'>Cancel</button>";
     			}
     			else if(reserved == 'waitlisted')
     			{
-    				row.insertCell(5).innerHTML = "<button type='button' disabled='true' id=" + classdate +" onclick='reserveClass(this)'>Waitlist # " + waitspot + "</button>";
-    				row.insertCell(6).innerHTML = "<button type='button' id=" + classDateTime +" onclick='cancelClass(this)'>Cancel</button>";
+    				row.insertCell(5).innerHTML = "<button type='button' disabled='true' id=" + reserve_data +" onclick='reserveClass(this)'>Waitlist # " + waitspot + "</button>";
+    				row.insertCell(6).innerHTML = "<button type='button'  onclick='cancelClass(" + i + ")'>Cancel</button>";
     			}
     			else
     			{
     				if(remaining_spots == 0)
     				{
-    					row.insertCell(5).innerHTML = "<button type='button' id=" + classdate +" onclick='reserveClass(this)'>Join Wait list</button>";
+    					row.insertCell(5).innerHTML = "<button type='button' id=" + reserve_data +" onclick='reserveClass(this)'>Join Wait list</button>";
     				}
     				else if(isFree == "True")
     				{
-    					row.insertCell(5).innerHTML = "<button type='button' id=" + classdate +" onclick='reserveClass(this)'>Sign Up Free Class</button>";
+    					row.insertCell(5).innerHTML = "<button type='button' id=" + reserve_data +" onclick='reserveClass(this)'>Sign Up Free Class</button>";
     				}
     				else
     				{
-    					row.insertCell(5).innerHTML = "<button type='button' id=" + classdate +" onclick='reserveClass(this)'>Sign Up</button>";
+    					row.insertCell(5).innerHTML = "<button type='button' id=" + reserve_data +" onclick='reserveClass(this)'>Sign Up</button>";
     				}
     				
     			}
@@ -192,12 +201,17 @@ function getClassData()
 	}
 
 
-function cancelClass(reserve_button)
+function cancelClass(index)
 {	
 	document.getElementById("status").textContent="Processing Request... Please Wait"
-	classdate = reserve_button.id
+	classdate = classDateTimes[index]
+	classtype = classtypes[index]
+
+	console.log("attempting to cancel " + classdate + " " + classtype )
+
 	data = {
-			"class_date": classdate
+			"class_date": classdate,
+			"class_type": classtype
 		}
 	var postRequest = new XMLHttpRequest()
 
@@ -229,7 +243,10 @@ function cancelClass(reserve_button)
 function reserveClass(reserve_button)
 { 
 	document.getElementById("status").textContent="Processing Request... Please Wait"
-	classdate = reserve_button.id
+	reserve_data = reserve_button.id
+	reserve_split = reserve_data.split("_")
+	classdate = reserve_split[0]
+	classtype = reserve_split[1]
 	if(isLoggedIn() == false)
 	{
 		window.location.replace("sign-in.html")
@@ -239,8 +256,11 @@ function reserveClass(reserve_button)
 		checkWaiverStatus();
 
 		data = {
-			"class_date": classdate
+			"class_date": classdate,
+			"class_type": classtype
 		}
+
+		console.log("attempting to reserve " + classdate + " " + classtype)
 
 		var postRequest = new XMLHttpRequest()
 

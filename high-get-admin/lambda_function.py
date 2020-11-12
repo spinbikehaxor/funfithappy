@@ -78,10 +78,10 @@ def lambda_handler(event, context):
     classes = getUpcomingClasses()
     streamingTimes = getStreamingTimes()
     streamStats = getRecentStreamStats()
-    print(str(locations))
-    print(str(classes))
-    print(str(streamingTimes))
-    print(str(streamStats))
+  #  print(str(locations))
+  #  print(str(classes))
+  #  print(str(streamingTimes))
+  #  print(str(streamStats))
     
     data = {
         'locations':locations,
@@ -162,16 +162,24 @@ def getUpcomingClasses():
     for i in query_response['Items']:
         
         class_date = i['class_date']
+        class_date_trim = class_date
+        if " " in class_date:
+            class_date_split = class_date.split(" ")
+            class_date_trim = class_date_split[0]
+            
         class_time = i['class_time']
         t = time.strptime(class_time, "%H:%M")
         timevalue_12hour = time.strftime( "%-I:%M %p", t )
         roster = getClassRoster(class_date)
         
+        print("Roster for " + class_date_trim + " " + str(roster))
+        
         if 'class_type' in i.keys():
             class_type = i['class_type']
         
         data = {
-            'class_date' : class_date,
+            'class_date_trim' : class_date_trim,
+            'class_date'      : class_date,
             'class_time' : timevalue_12hour,
             'class_type' : class_type,
             'location' : i['location'],

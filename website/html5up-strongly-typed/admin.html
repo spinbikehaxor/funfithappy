@@ -672,10 +672,11 @@ function populatePage(requestData)
 	{		
 		var obj = classes[i];
 		classdate = obj.class_date
+		classdatetrim = obj.class_date_trim
 		classdates[i] = classdate
 		time = obj.class_time
 
-		classDateTime = classdate + " " + time
+		classDateTime = classdatetrim + " " + time
 		spots_taken = obj.spots_taken
 		class_location = obj.location
 		class_type = obj.class_type
@@ -687,7 +688,7 @@ function populatePage(requestData)
 		classDiv.style = "display:none"
 
 		var header = document.createElement("h3") 
-		header.innerText = classdate
+		header.innerText = classdatetrim
 		var tbl = document.createElement("table");
 		tbl.id = classdate
 		rosterheader = tbl.insertRow(0)

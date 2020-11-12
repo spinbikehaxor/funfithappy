@@ -4,7 +4,7 @@ import datetime
 import json
 import jwt
 
-from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Key, Attr
 from botocore.exceptions import ClientError
 from datetime import datetime
 from datetime import timedelta
@@ -95,8 +95,9 @@ def lambda_handler(event, context):
         
     body_json = json.loads(body)
     class_date = body_json['class_date']
+    class_type = body_json['class_type']
     
-    class_details = getClassDetails(class_date)
+    class_details = getClassDetails(class_date, class_type)
     isFree = class_details['isFree']
 
     capacity = class_details['capacity']
@@ -113,7 +114,7 @@ def lambda_handler(event, context):
             'body': json.dumps('Please purchase class credits prior to reserving a spot in class')
         }
     
-    spotNumber = signup(class_date, capacity, isFree)
+    spotNumber = signup(class_details['class_date'], capacity, isFree)
     if(spotNumber == -1):
         return {
             'statusCode': 422,
@@ -167,6 +168,7 @@ def decrementPaidCredits(username):
             
     
 def signup(class_date, capacity, isFree):
+    print("in signup, class_date = " + class_date)
     table = dynamodb.Table('HighLiveClassSignup')
     
     signup_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -208,8 +210,8 @@ def signup(class_date, capacity, isFree):
     
     return spotNumber
         
-def getClassDetails(class_date):
-    
+def getClassDetails(class_date, class_type):
+    print("in getClassDetails, class_date = " + class_date + " class_type = " + class_type) 
     #Step 1: Get Location
     table = dynamodb.Table('HighClasses')
     location = ''
@@ -218,11 +220,13 @@ def getClassDetails(class_date):
     isFree = False
   
     response = table.query(
-        KeyConditionExpression=Key('class_year').eq(class_year) & Key('class_date').eq(class_date)
+        KeyConditionExpression=Key('class_year').eq(class_year) & Key('class_date').begins_with(class_date),
+        FilterExpression=Attr('class_type').begins_with(class_type)
     )
-    
+    print("length of response for class details = " + str(len(response['Items'])))
     
     for i in response['Items']:
+        class_date_full = i['class_date']
         location = i['location']
         if 'isFree' in i.keys():
             isFree = i['isFree']
@@ -240,7 +244,8 @@ def getClassDetails(class_date):
     data = {
         'location' : location,
         'capacity' : capacity,
-        'isFree' : isFree
+        'isFree' : isFree,
+        'class_date': class_date_full
     }
     return data
     
@@ -258,11 +263,13 @@ def getSpotNumber(username, class_date):
     return spotNumber
     
 def incrementSpotsTaken(class_date):
+    print("in incrementSpotsTaken, class_date = " + class_date)
     dynamodb = boto3.resource('dynamodb', region_name='us-east-2', endpoint_url="https://dynamodb.us-east-2.amazonaws.com")
     table = dynamodb.Table('HighClasses')
     
-    classDateObj = datetime.strptime(class_date, '%Y-%m-%d')
-    class_year = classDateObj.strftime( "%Y")
+    classDateSplit = class_date.split("-")
+    #classDateObj = datetime.strptime(class_date, '%Y-%m-%d')
+    class_year = classDateSplit[0]
 
     response = table.update_item(
         Key={

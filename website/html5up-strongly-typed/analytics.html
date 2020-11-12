@@ -87,6 +87,40 @@
 										
 								</section>
 								<section>
+									<h3 id="bootTotalTitle">Boot Camp Plays: Last 30 Days </h3>
+										<div id="bootDiv" width="100px" max-width="100px">
+											<canvas id="bootGraph" width="400" height="400"></canvas>
+										</div>
+										
+								</section>
+								<section>
+									<h3>User Class Counts</h3>
+										<div id="classCountDiv" width="100px" max-width="100px" class="scrollingTable visible-scrollbar">
+											<table id="classCountTable">
+												<tr>
+											      <th>User</th>
+											      <th>Class Count</th>
+											   </tr>
+											</table>
+										</div>
+										<p id="scrollHint" style="display:none"><em>Scroll for more</em></p>
+										
+								</section>
+								<section>
+									<h3>Website Registrations Last 7 Days</h3>
+										<div id="siteRegistrations" width="100px" max-width="100px" class="scrollingTable visible-scrollbar">
+											<table id="siteRegistrationTable">
+												<tr>
+											      <th>User</th>
+											      <th>Sign Up Date</th>
+											      <th>Referred By</th>
+											   </tr>
+											</table>
+										</div>
+										<p id="scrollHint" style="display:none"><em>Scroll for more</em></p>
+										
+								</section>
+								<section>
 									<h3 id="subscriptionTitle">Subscriptions: </h3>
 										<div id="subscriberDiv" width="100px" max-width="100px" class="scrollingTable visible-scrollbar">
 											<table id="subscriberTable">
@@ -195,6 +229,55 @@ function populatePage(requestData)
 
 	activeCount = json.activeCount
 	document.getElementById("subscriptionTitle").innerText = "Subscriptions: " + activeCount + " Active"
+
+	userClassCounts = json.userClassCounts
+	populateUserClassCounts(userClassCounts)
+	console.log(userClassCounts)
+
+	bootcampCounts = json.bootcampCounts
+	totalBootcampCount = json.totalBootcampCount
+	populateBootcampStats(bootcampCounts)
+	document.getElementById("bootTotalTitle").innerText = "Boot Camp Plays: Last 30 Days (" + json.totalBootcampCount + ")"
+
+	registrations = json.recentRegistrations
+	populateSiteRegistrations(registrations)
+}
+
+function populateSiteRegistrations(registrations)
+{
+	var classCountTable = document.getElementById("siteRegistrationTable")
+	for (var i = 0, l = registrations.length; i < l; i++) 
+	{
+		var obj = registrations[i];
+		name = obj.name
+		created_date = obj.created_date
+		referred_by = obj.referred_by
+
+		row = classCountTable.insertRow(i +1)
+		row.insertCell(0).innerHTML = name;
+		row.insertCell(1).innerHTML = created_date;
+		row.insertCell(2).innerHTML = referred_by;
+	}
+
+	makeTableScroll("siteRegistrationTable")
+}
+
+function populateUserClassCounts(userClassCounts)
+{
+	var classCountTable = document.getElementById("classCountTable")
+	for (var i = 0, l = userClassCounts.length; i < l; i++) 
+	{
+		var obj = userClassCounts[i];
+		user = obj.username
+		classcount = obj.classcount
+
+		row = classCountTable.insertRow(i +1)
+		row.insertCell(0).innerHTML = user;
+		row.insertCell(1).innerHTML = classcount;
+	}
+
+	makeTableScroll("classCountTable")
+
 }
 
 function popuplateSubscriberStats(subscriberStats)
@@ -272,13 +355,31 @@ function populateMonthlyStreamStats(highStats)
 	averageCounts = averageCounts.filter(function (el) {
 	  return el != null & el > 1;
 	});
-	createChart(streamKeys, streamCounts)
+	createChart(streamKeys, streamCounts, 'myChart')
 	createAveragePieChart(streamKeys, averageCounts)
 }
 
-function createChart(streamKeys, streamCounts)
+function populateBootcampStats(bootStats)
+{	
+	console.log("bootcamp json: " + JSON.stringify(bootStats))
+	bootkeys = []
+	bootcounts = []
+	for(l = 0; l < bootStats.length; l++)
+	{
+		obj = bootStats[l]
+		classname = obj[0]
+		bootkeys.push(classname)
+		
+		bootcount = obj[1]
+		bootcounts.push(bootcount)
+	}
+	createChart(bootkeys, bootcounts, 'bootGraph')
+}
+
+
+function createChart(streamKeys, streamCounts, chartName)
 {
-	var ctx = document.getElementById('myChart');
+	var ctx = document.getElementById(chartName);
 	var myChart = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -322,7 +423,10 @@ function createChart(streamKeys, streamCounts)
                     beginAtZero: true
                 }
             }]
-        }
+        },
+        legend: {
+	            display: false
+	         }
     }
 });
 }
