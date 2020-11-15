@@ -388,6 +388,7 @@ body {
 $("table").rtResponsiveTables();
 
 var classdates = []
+var classtypes = []
 
 // Get the modal
 var modal = document.getElementById("editLocationModal");
@@ -680,6 +681,7 @@ function populatePage(requestData)
 		spots_taken = obj.spots_taken
 		class_location = obj.location
 		class_type = obj.class_type
+		classtypes[i] = class_type
 		roster = obj.roster;
 
 		var classDiv = document.createElement("div")
@@ -726,7 +728,7 @@ function populatePage(requestData)
 		//locationCell.appendChild(locsec);
 
 		row.insertCell(4).innerHTML = "<button type='button' id='" + classdate +"Button' onclick='viewRoster(this)'>View Class Roster</button>";
-		row.insertCell(5).innerHTML = "<button type='button' id='" + classdate +"Button' onclick='cancelClass(this)'>Cancel Class</button>";
+		row.insertCell(5).innerHTML = "<button type='button' onclick='cancelClass(" + i + ")'>Cancel Class</button>";
 	}
 }
 
@@ -901,14 +903,14 @@ function createStreamingTime()
 	postRequest.send(JSON.stringify(data))
 }
 
-function cancelClass(classbutton)
+function cancelClass(index)
 {
-	classdate = classbutton.id
-	classdatesplit = classdate.split("B")
-	classdatevalue = classdatesplit[0]
+	classdate = classdates[index]
+	classtype = classtypes[index]
+
 	url = "https://ww5m5x59lg.execute-api.us-east-2.amazonaws.com/default/any"
 	
-	if(window.confirm("Do you really want to cancel the " + classdatevalue + " class?"))
+	if(window.confirm("Do you really want to cancel the " + classdate + " class?"))
 	{
 		var postRequest = new XMLHttpRequest()
 		postRequest.open('POST', url, true)
@@ -916,7 +918,8 @@ function cancelClass(classbutton)
 		postRequest.setRequestHeader('X-Api-Key', parseCookie())
 
 		var data = {
-					"class_date": classdatevalue
+					"class_date": classdate,
+					"class_type": classtype
 			   };
 		postRequest.onload = function () 
 		{

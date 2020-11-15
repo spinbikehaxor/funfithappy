@@ -7,7 +7,7 @@ import jwt
 import time
 from botocore.exceptions import ClientError
 from datetime import datetime
-from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Key, Attr
 
 def isAuthorized(jwt_token):
     secretString = json.dumps(get_secret('jwt-secret'))
@@ -87,42 +87,67 @@ def deleteClass(body):
     table = dynamodb.Table('HighClasses')
     
     class_date = html.escape(body['class_date'].lower().strip())
+    class_type = html.escape(body['class_type'].strip())
     class_year_split = class_date.split('-')
     class_year = class_year_split[0]
+    
+    class_details = getClassDetails(class_date, class_type)
+    class_key = class_details['class_date']
+    isFree = class_details['isFree']
     
     response = table.delete_item(
         Key={
             'class_year': class_year,
-            'class_date': class_date
+            'class_date': class_key
         }
     )
-    deleteAndCreditReservations(class_date)
+    deleteAndCreditReservations(class_key, isFree)
 
     
-def isClassFree(class_date):
-    print("in getClassDetails " + class_date)
-
+def getClassDetails(class_date, class_type):
+    print("in getClassDetails " + class_date + " " + class_type)
+    #Step 1: Get Location
     table = dynamodb.Table('HighClasses')
     location = ''
-    classDateObj = datetime.strptime(class_date, '%Y-%m-%d')
-    class_year = classDateObj.strftime( "%Y")
+    class_date_split = class_date.split("-")
+    class_year = class_date_split[0]
     isFree = False
     class_time = ''
   
     response = table.query(
-        KeyConditionExpression=Key('class_year').eq(class_year) & Key('class_date').eq(class_date)
+        KeyConditionExpression=Key('class_year').eq(class_year) & Key('class_date').begins_with(class_date),
+        FilterExpression=Attr('class_type').begins_with(class_type)
     )
+    
     for i in response['Items']:
         location = i['location']
         class_time = i['class_time']
+        class_date_full = i['class_date']
         if 'isFree' in i.keys():
             isFreeString = i['isFree']
             if isFreeString == "True":
                 isFree = True
-   
-    return isFree
+
+    #Step 2: Get Capacity for Location
+    table = dynamodb.Table('HighLocation')
+  
+    response = table.query(
+        KeyConditionExpression=Key('name').eq(location)
+    )
+    for i in response['Items']:
+        capacity = i['capacity']
+        
+        
+    data = {
+        'location' : location,
+        'capacity' : capacity,
+        'isFree' : isFree,
+        'class_time' : class_time,
+        'class_date': class_date_full
+    }
+    return data
     
-def deleteAndCreditReservations(class_date):
+def deleteAndCreditReservations(class_date, isFree):
     print("in deleteAndCreditReservations")
     dynamodb = boto3.resource('dynamodb', region_name='us-east-2', endpoint_url="https://dynamodb.us-east-2.amazonaws.com")
     table = dynamodb.Table('HighLiveClassSignup')
@@ -137,9 +162,9 @@ def deleteAndCreditReservations(class_date):
         waitlist_number = i['waitlist_position']
         
         #Paid class is being cancelled, so credit users with reserved spots
-        if not isClassFree(class_date) and (spot_number > 0 and waitlist_number == 0):
+        if not isFree and (spot_number > 0 and waitlist_number == 0):
             returnPaidCredit(username)
-        
+            
         #Notify User
         email = getEmailForUser(username)
         sendEmail(email, class_date)
@@ -151,6 +176,7 @@ def deleteAndCreditReservations(class_date):
                 'class_date': class_date
             }
         )
+  
             
 def returnPaidCredit(username):
     table = dynamodb.Table('HighLiveCredits')
@@ -240,7 +266,8 @@ def sendEmail(email, class_date):
         },
         'body': json.dumps('Contact Us Email Sent!')
     }
-
+        
+        
 def get_secret(secret_name):
     region_name = "us-east-2"
 
