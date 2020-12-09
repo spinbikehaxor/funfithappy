@@ -49,37 +49,10 @@ def lambda_handler(event, context):
     headers = json_data['headers']
     #body = json_data['body']
     
-    if 'x-api-key' not in headers.keys():
-        return {
-            'statusCode': 401,
-            'headers': 
-             {
-                'Access-Control-Allow-Headers': '*',
-                'Access-Control-Allow-Origin':  '*',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
-             },
-             'body': json.dumps("No Token Header")
-         }
-    else:
-        authHeader = headers['x-api-key']
-        
-    if not isAuthorized(authHeader):
-        print("not authorized")
-        return {
-            'statusCode': 401,
-            'headers': 
-             {
-                'Access-Control-Allow-Headers': '*',
-                'Access-Control-Allow-Origin':  '*',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
-             },
-            'body': json.dumps('User authorization failed')
-        }
-    
     global dynamodb
     dynamodb = boto3.resource('dynamodb', region_name='us-east-2', endpoint_url="https://dynamodb.us-east-2.amazonaws.com")
     
-    classlist = getClasses()
+    classlist = getClasses(isLoggedIn(headers))
     return {
         'statusCode': 200,
         'headers': {
@@ -89,8 +62,25 @@ def lambda_handler(event, context):
         },
         'body': classlist
     }
+    
+def isLoggedIn(headers):
+    isLoggedIn = True
+    
+    if 'x-api-key' not in headers.keys():
+        isLoggedIn = False
+    else:
+        authHeader = headers['x-api-key']
+        if not authHeader or authHeader == 'null':
+            isLoggedIn = False
+            
+        else:
+            if not isAuthorized(authHeader):
+                print("not authorized")
+                isLoggedIn = False
+    
+    return isLoggedIn
 
-def getClasses():
+def getClasses(isLoggedIn):
     table = dynamodb.Table('HighClasses')
     location = ''
     future_classes = []
@@ -100,7 +90,6 @@ def getClasses():
     waitSpot = 0
     isFree = False
     class_type = "High"
-    user_class_list = getUserClasses()
     
     #TODO: Adjust for timezone
     scan_response = table.query(
@@ -116,20 +105,26 @@ def getClasses():
             continue
         
         isFree = False
-        class_type = "High"
-        class_date = i['class_date']
         reserved = None
+        class_type = "High"
         
-        reservedClass = next((item for item in user_class_list if item["class_date"] == i['class_date']), None)
+        class_date = i['class_date']
+        if " " in class_date:
+            class_date_split = class_date.split(" ")
+            class_date = class_date_split[0]
+            
+        if isLoggedIn:
+            user_class_list = getUserClasses()
+            reservedClass = next((item for item in user_class_list if item["class_date"] == i['class_date']), None)
         
-        if reservedClass:
-            print("found class " + str(class_date) + " for user " + username)
-            reserved = "reserved"
-            resSpot = reservedClass['reserve_position']
-            waitSpot = reservedClass['waitlist_position']
-            if(resSpot == '0'):
-                if(waitSpot > '0'):
-                    reserved = "waitlisted"
+            if reservedClass:
+                print("found class " + str(class_date) + " for user " + username)
+                reserved = "reserved"
+                resSpot = reservedClass['reserve_position']
+                waitSpot = reservedClass['waitlist_position']
+                if(resSpot == '0'):
+                    if(waitSpot > '0'):
+                        reserved = "waitlisted"
             
         class_time = i['class_time']
         t = time.strptime(class_time, "%H:%M")
@@ -181,6 +176,12 @@ def isReadyToDisplay(post_date, post_time):
     else:
         print("ready to post!")
         return True
+        
+def getCurrentTimePacific():
+    utcmoment_naive = datetime.utcnow()
+    utcmoment = utcmoment_naive.replace(tzinfo=pytz.utc)
+    currentTimePacific = utcmoment.astimezone(timezone('US/Pacific'))
+    return currentTimePacific
     
 def getLocationDetails(location):
     table = dynamodb.Table('HighLocation')

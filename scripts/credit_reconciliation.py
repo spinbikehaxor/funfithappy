@@ -92,6 +92,8 @@ def getTotalPaidCreditsForUser(username):
 			credits = credits +1
 		elif amountPaid == "35.00":
 			credits = credits +4
+		elif amountPaid == "50.00":
+			credits = credits + 10
 
 	#if credits > 0:		
 		#print(username + " has " + str(credits) + " credits")   

@@ -367,6 +367,35 @@ body {
 
 				</div>
 
+				<div id="sendMessageModal" class="modal">
+
+				  <!-- Modal content -->
+				  <div id ="messageModalContent" class="modal-content">
+				    <span id="closeMessageDialog" class="close">&times;</span>
+				   <p>Message Class Recipients</p>
+				    <div style="display:none">
+				    	<p>
+				    		<input id="sendMessageClassDate">
+				    	</p>
+				    </div>
+				    <div class="col-6 col-12-small">
+						<input name="subject" id="subject" placeholder="Subject" type="text" maxlength="50" />
+					</div>
+					 <div class="col-6 col-12-small">
+						<textarea name="messageText" id="messageText" rows="4" cols="50" maxlength="500">
+						</textarea>
+					</div>
+				    <div>
+				    	<p></p>
+				    </div>
+				    <div class="col-6 col-12-small">
+						<a href="javascript:messageRoster()" class="form-button-submit button icon solid fa-envelope">Send Message</a>
+					</div> 
+
+				  </div>
+
+				</div>
+
 			<!-- Footer -->
 				
 					<div id="copyright" class="container">
@@ -392,9 +421,11 @@ var classtypes = []
 
 // Get the modal
 var modal = document.getElementById("editLocationModal");
+var messageModal = document.getElementById("sendMessageModal")
 
 // Get the <span> element that closes the modal
 var span = document.getElementsByClassName("close")[0];
+var messageSpan = document.getElementsByClassName("close")[1];
 
 // When the user clicks on the button, open the modal
 function openModal(list_index) {
@@ -402,9 +433,18 @@ function openModal(list_index) {
   	modal.style.display = "block";
 }
 
+function openMessageModal(list_index) {
+	document.getElementById("sendMessageClassDate").value = classdates[list_index]
+  	messageModal.style.display = "block";
+}
+
 // When the user clicks on <span> (x), close the modal
 span.onclick = function() {
   modal.style.display = "none";
+}
+
+messageSpan.onclick = function() {
+  messageModal.style.display = "none";
 }
 
 // When the user clicks anywhere outside of the modal, close it
@@ -717,40 +757,75 @@ function populatePage(requestData)
 	    locLink.href = "javascript:openModal(" + i + ")"
 	    locLink.text = class_location
 
+	   	var rosterLink = document.createElement('a');
+	   	rosterLink.href = "javascript:viewRoster(" + i + ")"
+	   	rosterLink.text = classDateTime
+
 		row = table.insertRow(i +1)
-		row.insertCell(0).innerHTML = classDateTime;
+		var datetimeCell = row.insertCell(0)
+		datetimeCell.appendChild(rosterLink)
 		row.insertCell(1).innerHTML = spots_taken;
 		var locCell = row.insertCell(2)
 		locCell.appendChild(locLink)
 		row.insertCell(3).innerHTML = class_type
 
-		//var locationCell = row.insertCell(2);
-		//locationCell.appendChild(locsec);
-
-		row.insertCell(4).innerHTML = "<button type='button' id='" + classdate +"Button' onclick='viewRoster(this)'>View Class Roster</button>";
-		row.insertCell(5).innerHTML = "<button type='button' onclick='cancelClass(" + i + ")'>Cancel Class</button>";
+		row.insertCell(4).innerHTML = "<button type='button' onclick='openMessageModal(" + i + ")'>Send Message</button>";
+		row.insertCell(5).innerHTML = "<button type='button' onclick='cancelClass(" + i + ")'>Cancel</button>";
 	}
 }
 
-function viewRoster(classbutton)
+function viewRoster(index)
 {	
-	classdate = classbutton.id
-	classdatesplit = classdate.split("B")
-	divId = classdatesplit[0]+"Div"
+	classdate = classdates[index]
+	divId = classdate+"Div"
+	console.log("viewRoster " + divId)
 
-	if(classbutton.innerText == "HIDE CLASS ROSTER")
+	if(document.getElementById(divId).style.display == "block")
 	{
-		classbutton.innerText = "VIEW CLASS ROSTER"
 		document.getElementById(divId).style.display = "none"
 		document.getElementById('rosterdiv').style.display = "none"
 	}
 	else
 	{
-		classbutton.innerText = "HIDE CLASS ROSTER"
 		document.getElementById('rosterdiv').style.display = "block"
 		document.getElementById(divId).style.display = "block"
 	}
 		
+}
+
+function messageRoster()
+{
+	var postRequest = new XMLHttpRequest()
+	var data = {
+  		"subject" 		: document.getElementById("subject").value,
+  		"messageText"	: document.getElementById("messageText").value,
+  		"class_date" 	: document.getElementById("sendMessageClassDate").value
+	};
+
+	console.log("in messageRoster")
+	console.log(data)
+
+	postRequest.open('POST', 'https://okk56ox9y1.execute-api.us-east-2.amazonaws.com/default/any', true)
+	postRequest.setRequestHeader('Content-type', 'application/json;charset=UTF-8');
+	postRequest.setRequestHeader('X-Api-Key', parseCookie())
+	
+	postRequest.onload = function () 
+	{
+	  // Begin accessing JSON data here
+	  var responseData = JSON.parse(this.response)
+
+	  if (postRequest.status >= 200 && postRequest.status < 400) 
+	  {
+	  		alert("Message Sent!")
+	  		window.location.reload()
+	  }
+	  else 
+	  {
+	  	alert(postRequest.responseText)
+	  }
+	}
+
+	postRequest.send(JSON.stringify(data))
 }
 
 function postLiveCLass()
