@@ -5,6 +5,7 @@ import html
 import json
 import jwt
 from datetime import datetime
+from botocore.exceptions import ClientError
 
 def isAuthorized(jwt_token):
     secretString = json.dumps(get_secret('jwt-secret'))
@@ -31,11 +32,6 @@ def isAuthorized(jwt_token):
             
             global username 
             username = payload['username']
-            
-            if username not in ('dianatest', 'casshighfit', 'anniesouter'):
-                print("User is not an admin")
-                return False
-                
         except (jwt.DecodeError, jwt.ExpiredSignatureError) as e:
             print("got decoding error!" + str(e))
             return False
@@ -71,18 +67,30 @@ def lambda_handler(event, context):
     print("username = " + username)
     
     body = json.loads(json_data['body'])
-    saveLocation(body)
+    wasSaved = saveLocation(body)
+    
     
     print("keys = " + str(body.keys()))
-    return {
-        'statusCode': 200,
-            'headers': {
-                'Access-Control-Allow-Headers': '*',
-                'Access-Control-Allow-Origin':  '*',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
-            },
-            'body': json.dumps('Transaction written to DynamoDB!')
-    }
+    if(wasSaved):
+        return {
+            'statusCode': 200,
+                'headers': {
+                    'Access-Control-Allow-Headers': '*',
+                    'Access-Control-Allow-Origin':  '*',
+                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
+                },
+                'body': json.dumps('Transaction written to DynamoDB!')
+        }
+    else:
+        return {
+            'statusCode': 422,
+                'headers': {
+                    'Access-Control-Allow-Headers': '*',
+                    'Access-Control-Allow-Origin':  '*',
+                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
+                },
+                'body': json.dumps('A location with this ID already exists. Please enter a unique ID and try again.')
+        }
     
 def saveLocation(body):
     dynamodb = boto3.resource('dynamodb', region_name='us-east-2', endpoint_url="https://dynamodb.us-east-2.amazonaws.com")
@@ -94,16 +102,25 @@ def saveLocation(body):
     capacity = int(capacityString)
     display_name = html.escape(body['display-name']).strip()
     
-    response = table.put_item(
-        Item={
-            'name': id,
-            'address': address,
-            'capacity': capacity,
-            'display_name' : display_name
-        }
-    )
+    try:
+        response = table.put_item(
+            Item={
+                'name': id,
+                'address': address,
+                'capacity': capacity,
+                'display_name' : display_name
+            },
+            ConditionExpression="attribute_not_exists(#name)",
+            ExpressionAttributeNames =  {
+                '#name': 'name'
+            },
+        )
+    except ClientError as e:
+        print("ClientError encountered!")
+        if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
+            return False
     
-    print(response)
+    return True
 
 def get_secret(secret_name):
     region_name = "us-east-2"
