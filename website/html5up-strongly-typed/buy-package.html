@@ -77,7 +77,7 @@
 											<button onclick="javascript:togglePackage('4live')">4 Live Classes - $35</button>
 										</li>
 										<li>
-											<button id="blackFridayButton" onclick="javascript:togglePackage('10live')">10 Live Classes - $50</button>
+											<button onclick="javascript:togglePackage('10live')">10 Live Classes - $85</button>
 										</li>
 									</ul>
 								
@@ -126,6 +126,7 @@
 										<script>
 									      paypal.Buttons({
 									        createOrder: function(data, actions) {
+									        	console.log("in createOrder")
 									          return actions.order.create({
 									            purchase_units: [{
 									              amount: {
@@ -135,6 +136,7 @@
 									          });
 									        },
 									        onApprove: function(data, actions) {
+									        	console.log("in onApprove")
 									          return actions.order.capture().then(function(details) {
 									            //alert('Transaction Details ' + details);
 									            buyLive(details)
@@ -174,8 +176,8 @@
 							</div>
 							<div id="10live" style="display:none">
 								<p>
-									<h3>10 Live Classes - $50</h3>
-									<p>Black Friday Sale for 10 live classes with Annie and Cassie!
+									<h3>10 Live Classes - $85</h3>
+									<p>Purchase discounted credits for 10 live classes with Annie and Cassie!
 									<p>
 									<div id="paypal-button-container-10live"></div>
 										<script>
@@ -184,7 +186,7 @@
 									          return actions.order.create({
 									            purchase_units: [{
 									              amount: {
-									                value: '50.00'
+									                value: '85.00'
 									              }
 									            }]
 									          });
@@ -356,6 +358,8 @@ function xmlRequest(data)
 
 function buyLive(data)
 {
+	//console.log("in buyLive " + JSON.stringify(data))
+	console.log("in buyLive")
 	var postRequest = new XMLHttpRequest()
 
 	postRequest.open('POST', 'https://a2wfx5q809.execute-api.us-east-2.amazonaws.com/default/any', true)
@@ -379,7 +383,7 @@ function buyLive(data)
 	}
 
 	postRequest.send(JSON.stringify(data))
-	window.location.reload()
+	//window.location.reload()
 }
 
 

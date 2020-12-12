@@ -11,8 +11,6 @@ from datetime import datetime, timedelta
 from dateutil import parser
 from pytz import timezone
 
-
-
 def isAuthorized(jwt_token):
     secretString = json.dumps(get_secret('jwt-secret'))
     secretData = json.loads(secretString)
@@ -48,7 +46,7 @@ def lambda_handler(event, context):
     json_data = json.loads(json_string)
     headers = json_data['headers']
     #body = json_data['body']
-    
+
     global dynamodb
     dynamodb = boto3.resource('dynamodb', region_name='us-east-2', endpoint_url="https://dynamodb.us-east-2.amazonaws.com")
     
@@ -84,8 +82,8 @@ def getClasses(isLoggedIn):
     table = dynamodb.Table('HighClasses')
     location = ''
     future_classes = []
-    current_year = datetime.now().strftime( "%Y")
-    current_date = datetime.now().strftime( "%Y-%m-%d")
+    current_year = getCurrentTimePacific().strftime( "%Y")
+    current_date = getCurrentTimePacific().strftime( "%Y-%m-%d")
     resSpot = 0
     waitSpot = 0
     isFree = False
@@ -101,7 +99,15 @@ def getClasses(isLoggedIn):
         #Skip any records that aren't ready for posting
         post_date = i['post_date']
         post_time = i['post_time']
+
         if not isReadyToDisplay(post_date, post_time): 
+            continue
+        
+        #Skip any records for the same day where the time has past
+        class_date = i['class_date']
+        class_time = i['class_time']
+        
+        if not isBeforeClassTime(class_date, class_time):
             continue
         
         isFree = False
@@ -116,7 +122,7 @@ def getClasses(isLoggedIn):
         if isLoggedIn:
             user_class_list = getUserClasses()
             reservedClass = next((item for item in user_class_list if item["class_date"] == i['class_date']), None)
-        
+            
             if reservedClass:
                 print("found class " + str(class_date) + " for user " + username)
                 reserved = "reserved"
@@ -126,7 +132,7 @@ def getClasses(isLoggedIn):
                     if(waitSpot > '0'):
                         reserved = "waitlisted"
             
-        class_time = i['class_time']
+        
         t = time.strptime(class_time, "%H:%M")
         timevalue_12hour = time.strftime( "%-I:%M %p", t )
         
@@ -164,10 +170,8 @@ def isReadyToDisplay(post_date, post_time):
     post_datetime = parser.parse(post_timestamp_string)
     post_datetime_pacific = timezone('US/Pacific').localize(post_datetime)
     print("post_datetime_pacific: " + str(post_datetime_pacific))
-    
-    utcmoment_naive = datetime.utcnow()
-    utcmoment = utcmoment_naive.replace(tzinfo=pytz.utc)
-    currentTimePacific = utcmoment.astimezone(timezone('US/Pacific'))
+
+    currentTimePacific = getCurrentTimePacific()
     print("currentTimePacific: " + str(currentTimePacific))
 
     if currentTimePacific < post_datetime_pacific: 
@@ -175,6 +179,22 @@ def isReadyToDisplay(post_date, post_time):
         return False
     else:
         print("ready to post!")
+        return True
+        
+        
+def isBeforeClassTime(class_date, class_time):
+    class_timestamp_string = str(class_date) + " " + str(class_time)
+    class_datetime_pacific = parser.parse(class_timestamp_string)
+    print("class_datetime_pacific: " + str(class_datetime_pacific))
+    
+    currentTimePacific = getCurrentTimePacific()
+    print("currentTimePacific: " + str(currentTimePacific))
+
+    if currentTimePacific > class_datetime_pacific: 
+        print("class has already started!")
+        return False
+    else:
+        print("class hasn't happened yet")
         return True
         
 def getCurrentTimePacific():
