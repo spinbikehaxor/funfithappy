@@ -115,20 +115,30 @@ def writeStatsForUser(username, classname, classtype):
     )
     
     for i in query_response['Items']:
-        print("looping!")
         query_class_type = i['class_type']
         query_class_time = i['class_time']
         query_class_name = i['class_name']
         
         query_class_split = query_class_time.split(':')
         query_hour = query_class_split[0]
-        print("query_hour = " + query_hour + " classHour = " + classHour + " query_class_type = " + query_class_type + " classtype = " + classtype +
-        " query_class_name = " + query_class_name + " classname = " + classname)
+        query_min = query_class_split[1]
+      #  print("query_hour = " + query_hour + " classHour = " + classHour + " query_class_type = " + query_class_type + " classtype = " + classtype +
+      #  " query_class_name = " + query_class_name + " classname = " + classname)
         
-        #Don't double record the same class if they hit play multiple times.
-        if query_hour == classHour and query_class_type == classtype and query_class_name == classname:
-            print("found dup - not logging")
-            return
+        #Don't write multiple records for the same class if pause/play clicked a few times
+        if query_hour == classHour and query_class_type == classtype:
+            if query_class_name == classname:
+                print("found dup - not logging")
+                return
+            
+            #Only give credit for 1 bootcamp every 30 minutes
+            if(classtype == "Boot Camp"):
+                db_datetime = getCurrentTimePacific().replace(hour=int(query_hour), minute=int(query_min))
+                print("Db class datetime: " + str(db_datetime))
+                
+                if (getCurrentTimePacific() - db_datetime) < timedelta(minutes=30):
+                    print("Already logged a bootcamp - wait 30 minutes before logging another")
+                    return
         
     response = table.put_item(
         Item={
