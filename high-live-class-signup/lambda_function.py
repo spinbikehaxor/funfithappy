@@ -35,6 +35,7 @@ def isAuthorized(jwt_token):
             
             global username 
             username = payload['username']
+            print("HighLiveClassSignup: username is " + username)
         except (jwt.DecodeError, jwt.ExpiredSignatureError) as e:
             print("got decoding error!" + str(e))
             return False
@@ -96,13 +97,15 @@ def lambda_handler(event, context):
     body_json = json.loads(body)
     class_date = body_json['class_date']
     class_type = body_json['class_type']
+    if class_type =="Boot":
+        class_type = "Boot Camp"
     
     class_details = getClassDetails(class_date, class_type)
     isFree = class_details['isFree']
 
     capacity = class_details['capacity']
     
-    if isFree == "False" and not hasPaidCredits(username):
+    if isFree == "False" and not hasPaidCredits(username, class_type):
         return {
             'statusCode': 422,
             'headers': 
@@ -114,7 +117,7 @@ def lambda_handler(event, context):
             'body': json.dumps('Please purchase class credits prior to reserving a spot in class')
         }
     
-    spotNumber = signup(class_details['class_date'], capacity, isFree)
+    spotNumber = signup(class_details['class_date'], capacity, isFree, class_type)
     if(spotNumber == -1):
         return {
             'statusCode': 422,
@@ -127,6 +130,15 @@ def lambda_handler(event, context):
             'body': json.dumps('You already have a reservation for the requested class')
         }
     
+    #Update capacity for double classes
+    elif (class_type =="Boot-Low"):
+        print("boot-low combo! Need to incrementSpotsTaken for both individual classes")
+        low_class_details = getClassDetails(class_date, "High-Low")
+        incrementSpotsTaken(low_class_details['class_date'])
+        
+        boot_class_details = getClassDetails(class_date, "Boot Camp")
+        incrementSpotsTaken(boot_class_details['class_date'])
+    
     
     return {
         'statusCode': 200,
@@ -138,22 +150,33 @@ def lambda_handler(event, context):
         'body': json.dumps(spotNumber)
     }
     
-def hasPaidCredits(username):
+def hasPaidCredits(username, class_type):
     table = dynamodb.Table('HighLiveCredits')
     
     query_response = table.query(
         KeyConditionExpression=Key('username').eq(username)
     )
+    
+    creditThreshold = 1
+    if( class_type == "Boot-Low"):
+        creditThreshold = 1.5
+        
     for i in query_response['Items']:
         credits = i['credits']
-        if credits > 0:
+        if credits > creditThreshold:
             return True
     
     return False
             
             
-def decrementPaidCredits(username):
+def decrementPaidCredits(username, class_type):
     table = dynamodb.Table('HighLiveCredits')
+    
+    creditCost = '1'
+    
+    if(class_type == "Boot-Low"):
+        creditCost = '1.5'
+        
     response = table.update_item(
         Key={
             'username': username
@@ -161,13 +184,13 @@ def decrementPaidCredits(username):
         UpdateExpression='SET credits = if_not_exists(credits, :zero) - :decr',
             ConditionExpression="credits > :zero",
             ExpressionAttributeValues={
-                ':decr': 1, ':zero': 0
+                ':decr': Decimal(creditCost), ':zero': 0
             },
         ReturnValues="UPDATED_NEW"
     )
             
     
-def signup(class_date, capacity, isFree):
+def signup(class_date, capacity, isFree, class_type):
     print("in signup, class_date = " + class_date)
     table = dynamodb.Table('HighLiveClassSignup')
     
@@ -205,7 +228,7 @@ def signup(class_date, capacity, isFree):
     if isFree == "False":
         print("class is paid - charging!")
         if waitlist_position == 0 and reserve_position > 0:
-            decrementPaidCredits(formatted_username)
+            decrementPaidCredits(formatted_username, class_type)
         
     
     return spotNumber
@@ -215,8 +238,8 @@ def getClassDetails(class_date, class_type):
     #Step 1: Get Location
     table = dynamodb.Table('HighClasses')
     location = ''
-    classDateObj = datetime.strptime(class_date, '%Y-%m-%d')
-    class_year = classDateObj.strftime( "%Y")
+    classDateObj = class_date.split("-")
+    class_year = classDateObj[0]
     isFree = False
   
     response = table.query(

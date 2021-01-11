@@ -5,11 +5,13 @@ import jwt
 import pytz
 import time
 
-from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Key, Attr
 from botocore.exceptions import ClientError
 from datetime import datetime, timedelta
 from dateutil import parser
 from pytz import timezone
+
+
 
 def isAuthorized(jwt_token):
     secretString = json.dumps(get_secret('jwt-secret'))
@@ -46,7 +48,7 @@ def lambda_handler(event, context):
     json_data = json.loads(json_string)
     headers = json_data['headers']
     #body = json_data['body']
-
+    
     global dynamodb
     dynamodb = boto3.resource('dynamodb', region_name='us-east-2', endpoint_url="https://dynamodb.us-east-2.amazonaws.com")
     
@@ -88,10 +90,13 @@ def getClasses(isLoggedIn):
     waitSpot = 0
     isFree = False
     class_type = "High"
+    isComboInList = False
+    comboDate = ""
+    info = ""
     
     #TODO: Adjust for timezone
-    scan_response = table.query(
-        KeyConditionExpression=Key('class_year').eq(current_year) & Key('class_date').gte(current_date)
+    scan_response = table.scan(
+        FilterExpression=Attr('class_date').gte(current_date)
     )
 
     for i in scan_response['Items']:
@@ -99,7 +104,6 @@ def getClasses(isLoggedIn):
         #Skip any records that aren't ready for posting
         post_date = i['post_date']
         post_time = i['post_time']
-
         if not isReadyToDisplay(post_date, post_time): 
             continue
         
@@ -114,7 +118,6 @@ def getClasses(isLoggedIn):
         reserved = None
         class_type = "High"
         
-        class_date = i['class_date']
         if " " in class_date:
             class_date_split = class_date.split(" ")
             class_date = class_date_split[0]
@@ -122,7 +125,7 @@ def getClasses(isLoggedIn):
         if isLoggedIn:
             user_class_list = getUserClasses()
             reservedClass = next((item for item in user_class_list if item["class_date"] == i['class_date']), None)
-            
+        
             if reservedClass:
                 print("found class " + str(class_date) + " for user " + username)
                 reserved = "reserved"
@@ -132,7 +135,6 @@ def getClasses(isLoggedIn):
                     if(waitSpot > '0'):
                         reserved = "waitlisted"
             
-        
         t = time.strptime(class_time, "%H:%M")
         timevalue_12hour = time.strftime( "%-I:%M %p", t )
         
@@ -142,6 +144,13 @@ def getClasses(isLoggedIn):
             
         if 'class_type' in i.keys():
             class_type = i['class_type']
+            
+            if class_type == "Boot-Low Combo":
+                isComboInList = True
+                comboDate = class_date
+        
+        if "info" in i.keys():
+            info = i['info']
         
         spots_taken = 0
         location_data = getLocationDetails(i['location'])
@@ -156,14 +165,65 @@ def getClasses(isLoggedIn):
             "res_spot": resSpot,
             "waitSpot": waitSpot,
             "isFree": isFree,
-            "class_type" : class_type    
+            "class_type" : class_type,
+            "info": info
         }
             
         class_data.update(location_data)
         future_classes.append(class_data)
 
     sorted_classes = sorted(future_classes, key = lambda i: i['class_date'])
+    
+    #If there is a combo class, hide/display the combo and indiv classes based on prior signups. Prevent dup signups!
+    if isComboInList:
+        sorted_classes = updateListForCombos(sorted_classes, comboDate)
+        
     return json.dumps(sorted_classes)
+    
+#Loop through classes one more time. If signed up for combo, hide the indiv classes and vice versa
+def updateListForCombos(sorted_classes, comboDate):
+    
+    updatedClassList = []
+    
+    #Strip off the timestamp
+    comboDateStrip = comboDate.split(" ")[0]
+    
+    #reservedClass =   next((item for item in user_class_list if item["class_date"] == i['class_date']), None)
+    
+    isComboReserved = next((item for item in sorted_classes if 
+        item["class_date"].split(" ")[0] == comboDateStrip and 
+        item['class_type'] == "Boot-Low Combo" and 
+        item['reserved'] in ('reserved', 'waitlisted')), None)
+    
+    isBootReserved = next((item for item in sorted_classes if 
+        item["class_date"].split(" ")[0] == comboDateStrip and 
+        item['class_type'] == "Boot Camp" and
+        item['reserved'] in ('reserved', 'waitlisted')), None)
+        
+    isLowReserved = next((item for item in sorted_classes if 
+        item["class_date"].split(" ")[0] == comboDateStrip and 
+        item['class_type'] == "High-Low" and
+        item['reserved'] in ('reserved', 'waitlisted')), None)
+    
+    for i in sorted_classes:
+        class_type = i['class_type']
+        class_date = i['class_date']
+        reserved = i['reserved']
+    
+        classDateStrip = class_date.split(" ")[0]
+        if(classDateStrip == comboDateStrip):
+            
+            #Don't add to list if signed up for combo
+            if isComboReserved:
+                if class_type == "Boot Camp" or class_type == "High-Low": 
+                    continue;
+            elif isBootReserved or isLowReserved:
+                if class_type == "Boot-Low Combo":
+                    continue;
+            
+        #Add everything else to the class list
+        updatedClassList.append(i)
+    return updatedClassList
     
 def isReadyToDisplay(post_date, post_time):
     post_timestamp_string = str(post_date) + " " + str(post_time)

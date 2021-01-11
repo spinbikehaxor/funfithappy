@@ -4,8 +4,10 @@ import datetime
 import html
 import json
 import jwt
+import pytz
 import time
 from datetime import datetime
+from pytz import timezone
 
 def isAuthorized(jwt_token):
     secretString = json.dumps(get_secret('jwt-secret'))
@@ -32,11 +34,6 @@ def isAuthorized(jwt_token):
             
             global username 
             username = payload['username']
-            
-            if username not in ('dianatest', 'casshighfit', 'anniesouter'):
-                print("User is not an admin")
-                return False
-                
         except (jwt.DecodeError, jwt.ExpiredSignatureError) as e:
             print("got decoding error!" + str(e))
             return False
@@ -97,7 +94,11 @@ def lambda_handler(event, context):
 def saveClass(body):
     dynamodb = boto3.resource('dynamodb', region_name='us-east-2', endpoint_url="https://dynamodb.us-east-2.amazonaws.com")
     table = dynamodb.Table('HighClasses')
-
+    
+    currentTimePacific = getCurrentTimePacific()
+    timestamp = str(currentTimePacific).split(" ")[1]
+    
+    isFree = False
     date = html.escape(body['class_date'].lower().strip())
     location = html.escape(body['location']).strip()
     class_time = html.escape(body['class_time']).strip()
@@ -105,6 +106,7 @@ def saveClass(body):
     post_date = html.escape(body['post_date'].lower().strip())
     post_time = html.escape(body['post_time']).strip()
     class_type = html.escape(body['class_type']).strip()
+    class_info = html.escape(body['class_info']).strip()
     
     if len(class_time) != 5:
         return "ERROR: Please enter the class time in Hour:Minute format using 24 hour time (i.e. 17:00, 01:00, etc.)"
@@ -117,7 +119,7 @@ def saveClass(body):
     
     if len(post_date) != 10:
         return "ERROR: Please enter the posting date in Year-Month-Day format (i.e. 2020-08-01)"
-
+        
     #Create date and time objects just to see if data is correctly formatted
     try:
         classdate = datetime.strptime(date,"%Y-%m-%d")
@@ -140,29 +142,36 @@ def saveClass(body):
     except ValueError as e:
         print(str(e))
         return "ERROR: Please enter the class time in Hour:Minute format using 24 hour time (i.e. 17:00, 01:00, etc.)"
-        
+    
     try:
         t = time.strptime(post_time, "%H:%M")
     except ValueError as e:
         print(str(e))
         return "ERROR: Please enter the posting time in Hour:Minute format using 24 hour time (i.e. 17:00, 01:00, etc.)"
     
-    
     response = table.put_item(
         Item={
             'class_year': classyear,
-            'class_date': date,
+            'class_date': date + " " + timestamp, #Have to append timestamp so can have 2 classes on same day. Dumb Dynamo key structure!!
             'class_time': class_time,
             'location' : location,
             'spots_taken' : 0,
             'isFree' : isFree,
             'post_date' : post_date,
             'post_time' : post_time,
-            'class_type' : class_type
+            'class_type' : class_type,
+            'info': class_info
         }
     )
     
     return("Class Added!")
+    
+    
+def getCurrentTimePacific():
+    utcmoment_naive = datetime.utcnow()
+    utcmoment = utcmoment_naive.replace(tzinfo=pytz.utc)
+    currentTimePacific = utcmoment.astimezone(timezone('US/Pacific'))
+    return currentTimePacific
 
 def get_secret(secret_name):
     region_name = "us-east-2"

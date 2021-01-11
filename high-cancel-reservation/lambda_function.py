@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from pytz import timezone
 from boto3.dynamodb.conditions import Key, Attr
 from botocore.exceptions import ClientError
+from decimal import *
 
 def isAuthorized(jwt_token):
     secretString = json.dumps(get_secret('jwt-secret'))
@@ -102,7 +103,16 @@ def lambda_handler(event, context):
                 'body': json.dumps("Cannot Cancel Within 3 Hours of Class")
             }
     
-    cancelReservation(class_details['class_date'], isFree, class_details['capacity'])
+    cancelReservation(class_details['class_date'], isFree, class_details['capacity'], class_type)
+
+    #Update capacity for double classes
+    if (class_type =="Boot-Low Combo"):
+        print("boot-low combo! Need to decrementSpotsTaken for both individual classes")
+        low_class_details = getClassDetails(classDateString, "High-Low")
+        decrementSpotsTaken(low_class_details['class_date'])
+        
+        boot_class_details = getClassDetails(classDateString, "Boot Camp")
+        decrementSpotsTaken(boot_class_details['class_date'])
     
     return {
         'statusCode': 200,
@@ -140,7 +150,7 @@ def withinCancelWindow(class_date, classtime):
         return False
     
     
-def cancelReservation(class_date, isFree, capacity):
+def cancelReservation(class_date, isFree, capacity, class_type):
     print("in cancelReservation, class_date = " + class_date)
     table = dynamodb.Table('HighLiveClassSignup')
     userformatted = username.lower().strip()
@@ -169,12 +179,12 @@ def cancelReservation(class_date, isFree, capacity):
         print("Not free so checking spot to return credit")
         if(reservePosition > 0 and waitlistPosition == 0):
             print("reserved spot so returning credit")
-            returnPaidCredit(userformatted)
+            returnPaidCredit(userformatted, class_type)
             reserved = True
         
-    reorderPositions(class_date, reserved, isFree, capacity)
+    reorderPositions(class_date, reserved, isFree, capacity, class_type)
     
-def reorderPositions(class_date, reserved, isFree, capacity):
+def reorderPositions(class_date, reserved, isFree, capacity, class_type):
     reservationList = []
     sorted_reservations = []
     
@@ -221,7 +231,9 @@ def reorderPositions(class_date, reserved, isFree, capacity):
         elif classCountIter == capacity and reserved:
             resSpot = classCountIter
             if not isFree:
-                chargeCreditForBumpedUpUser(reservation['username'])
+                chargeCreditForBumpedUpUser(reservation['username'], class_type)
+                email = getEmailForUser(reservation['username'])
+                sendReservedEmail(email, class_date, class_type)
             
         #Reorder the waitlist
         elif classCountIter > capacity:
@@ -242,8 +254,12 @@ def reorderPositions(class_date, reserved, isFree, capacity):
         i += 1
     
 
-def chargeCreditForBumpedUpUser(username):
+def chargeCreditForBumpedUpUser(username, class_type):
     table = dynamodb.Table('HighLiveCredits')
+
+    creditAmount = 1
+    if(class_type =="Boot-Low Combo"):
+        creditAmount = 1.5
  
     update_response = table.update_item(
         Key={
@@ -251,14 +267,19 @@ def chargeCreditForBumpedUpUser(username):
         },
        UpdateExpression='SET credits = if_not_exists(credits, :zero) - :incr',
             ExpressionAttributeValues={
-                ':incr': 1, ':zero': 0
+                ':incr': Decimal(creditAmount), ':zero': 0
             },
             ReturnValues="UPDATED_NEW"
     )
    
     
-def returnPaidCredit(username):
+def returnPaidCredit(username, class_type):
     table = dynamodb.Table('HighLiveCredits')
+
+    creditAmount = 1
+    if(class_type =="Boot-Low Combo"):
+        creditAmount = 1.5
+
     response = table.update_item(
         Key={
             'username': username
@@ -266,7 +287,7 @@ def returnPaidCredit(username):
         UpdateExpression='SET credits = if_not_exists(credits, :zero) + :incr',
            # ConditionExpression="credits > :zero",
             ExpressionAttributeValues={
-                ':incr': 1, ':zero': 0
+                ':incr': Decimal(creditAmount), ':zero': 0
             },
         ReturnValues="UPDATED_NEW"
     )
@@ -308,8 +329,8 @@ def getClassDetails(class_date, class_type):
     #Step 1: Get Location
     table = dynamodb.Table('HighClasses')
     location = ''
-    classDateObj = datetime.strptime(class_date, '%Y-%m-%d')
-    class_year = classDateObj.strftime( "%Y")
+    classDateObj = class_date.split("-")
+    class_year = classDateObj[0]
     isFree = False
     class_time = ''
   
@@ -345,6 +366,85 @@ def getClassDetails(class_date, class_type):
         'class_date': class_date_full
     }
     return data
+
+def getEmailForUser(username):
+    print("in getEmailForUser, username is " + username)
+    table = dynamodb.Table('SiteUsers')
+    query_response = table.query(
+        KeyConditionExpression=Key('username').eq(username)
+    )
+    for i in query_response['Items']:
+        email = i['email']
+        return email
+
+
+def sendReservedEmail(email, class_date, class_type):
+    print("in sendEmail")
+    
+    #strip ugly timestamp gak off of time
+    class_date = class_date.split(" ")[0]
+
+    SENDER = "anniecassiehigh@gmail.com"
+    AWS_REGION = "us-east-2"
+    SUBJECT = str(class_date) + " " + class_type +  ": You're In! "
+    CHARSET = "UTF-8"
+
+    BODY_TEXT = (str(class_date) + " " + class_type +  ": You're In! ")
+    BODY_HTML = """<html><head></head><body>
+  <h1>""" + str(class_date) + """  """ + class_type + """: You're In!</h1>
+  <p>Hello! We have had a cancellation for the  """ + class_type + """ Class scheduled for """ + str(class_date) + """  and you now have a reserved spot. If you can no longer make it, please cancel prior to 3 hours before class to ensure a refunded credit.</p>
+</body></html>
+ """
+    client = boto3.client('ses',region_name=AWS_REGION)
+
+    try:
+    #Provide the contents of the email.
+        print("sending email to " + str(email))
+        emailList = []
+        emailList.append(email)
+        response = client.send_email(
+            Destination={
+                'ToAddresses': 
+                     emailList
+                ,
+            },
+            Message={
+                'Body': {
+                    'Html': {
+                        'Charset': CHARSET,
+                        'Data': BODY_HTML,
+                        },
+                    'Text': {
+                        'Charset': CHARSET,
+                        'Data': BODY_TEXT,
+                    },
+                },
+                'Subject': {
+                    'Charset': CHARSET,
+                    'Data': SUBJECT,
+                },
+            },
+            Source=SENDER,
+        # If you are not using a configuration set, comment or delete the
+        # following line
+        #ConfigurationSetName=CONFIGURATION_SET,
+    )
+# Display an error if something goes wrong. 
+    except ClientError as e:
+        print(e.response['Error']['Message'])
+    else:
+        print("Email sent! Message ID:"),
+        print(response['MessageId'])
+    
+    return {
+        'statusCode': 200,
+        'headers': {
+            'Access-Control-Allow-Headers': '*',
+            'Access-Control-Allow-Origin':  '*',
+            'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
+        },
+        'body': json.dumps('Relocation Notification Email Sent!')
+    }
 
 def get_secret(secret_name):
     region_name = "us-east-2"

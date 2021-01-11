@@ -53,7 +53,9 @@
 					<div class="container">
 						<h4>NOTE: Cancellations with a refunded credit are allowed up to 3 hours before class</h4>
 
-						<p>Please visit our <a target="new" href="https://give.foodbankccs.org/fundraiser/3076361">Food Bank fundraising page</a> to donate to our December 19th Holiday fundraiser</p>
+						<!--<p>Please visit our <a target="new" href="https://give.foodbankccs.org/fundraiser/3076361">Food Bank fundraising page</a> to donate to our December 19th Holiday fundraiser</p> -->
+
+						<p>Boot Camp/High Low Combo classes are discounted at 1.5 credits ($15 value). Sign up for either the combo or the individual classes (both are listed until you sign up)</p>  
 
 						<div class="row">
 			
@@ -64,8 +66,7 @@
 											      <th>Time</th>
 											      <th>Location</th>
 											      <th>Type</th>
-											      <th>Spots</th>
-											      <th></th>
+											      <th>Info</th>
 											   </tr>
 											</table>
 								
@@ -140,10 +141,12 @@ function getClassData()
     			display_name = obj.display_name
     			reserved = obj.reserved
     			spots_taken = obj.spots_taken
+    			resspot = obj.res_spot
     			waitspot = obj.waitSpot
     			isFree = obj.isFree
     			class_type = obj.class_type
     			console.log("class_type = " + class_type)
+    			info = obj.info
 
     			classtypes[i] = class_type
     			classDateTimes[i]= classDateTime
@@ -161,17 +164,17 @@ function getClassData()
     			row.insertCell(1).innerHTML = time;
     			row.insertCell(2).innerHTML = display_name;
     			row.insertCell(3).innerHTML = class_type;
-    			row.insertCell(4).innerHTML = remaining_spots;
+    			row.insertCell(4).innerHTML = info;
 
+    			
     			if(reserved == 'reserved')
     			{
-    				row.insertCell(5).innerHTML = "<button type='button' disabled='true' id=" + reserve_data +" onclick='reserveClass(this)'>You're In!</button>";
-    				row.insertCell(6).innerHTML = "<button type='button'  onclick='cancelClass(" + i + ")'>Cancel</button>";
+    				console.log("reserved class!")
+    				row.insertCell(5).innerHTML = "<button type='button' onclick='cancelClass(" + i + ")'>Cancel Spot #" + resspot + "</button>";
     			}
     			else if(reserved == 'waitlisted')
     			{
-    				row.insertCell(5).innerHTML = "<button type='button' disabled='true' id=" + reserve_data +" onclick='reserveClass(this)'>Waitlist # " + waitspot + "</button>";
-    				row.insertCell(6).innerHTML = "<button type='button'  onclick='cancelClass(" + i + ")'>Cancel</button>";
+    				row.insertCell(5).innerHTML = "<button type='button' onclick='cancelClass(" + i + ")'>Cancel Wait list #" + waitspot + "</button>";
     			}
     			else
     			{

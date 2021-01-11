@@ -191,11 +191,23 @@ def getClassHistory(username):
     )
     #TODO - add clause where only get resposition > 0
     for i in query_response['Items']:
+        classdate = i['class_date']
+        class_time = ""
+        class_type = "High"
+        
+        if " " in classdate:
+            classdatesplit = classdate.split(" ")
+            classdate = classdatesplit[0]
+            
+        classQueryResults = getClassDetails(i['class_date'])
+        class_time = classQueryResults['class_time']
+        class_type = classQueryResults['class_type']
+        
         data = {
-            "classdate":i['class_date'],
-            "class_type": 'High',
-            "class_name": 'High Live',
-            'class_time': ''
+            "classdate": classdate,
+            "class_type": class_type,
+            "class_name": 'Live Class',
+            'class_time': class_time
 
         }
         classes.append(data)
@@ -230,6 +242,34 @@ def getPaidCredits(username):
         credits = i['credits']
         
     return credits
+    
+    
+def getClassDetails(class_date):
+    print("in getClassDetails " + class_date)
+    #Step 1: Get Location
+    table = dynamodb.Table('HighClasses')
+    location = ''
+    class_date_split = class_date.split("-")
+    class_year = class_date_split[0]
+    isFree = False
+    class_time = ''
+  
+    response = table.query(
+        KeyConditionExpression=Key('class_year').eq(class_year) & Key('class_date').eq(class_date)
+    )
+    
+    for i in response['Items']:
+        class_time = i['class_time']
+        class_type = "High"
+        
+        if 'class_type' in i.keys():
+            class_type = i['class_type']
+        data = {
+            'class_time' : class_time,
+            'class_type': class_type
+        }
+        print("returning class details " + str(data))
+        return data
 
         
 def getWaiver(username):

@@ -6,6 +6,7 @@ import jwt
 from datetime import datetime, timedelta
 from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
+from decimal import *
 
 def isAuthorized(jwt_token):
     secretString = json.dumps(get_secret('jwt-secret'))
@@ -84,6 +85,7 @@ def lambda_handler(event, context):
 
     orig_class_details = getClassDetails(classDateString)
     orig_capacity = orig_class_details['capacity']
+    class_type = orig_class_details['class_type']
     
     updateLocation(class_date, new_loc_id)
     
@@ -95,12 +97,12 @@ def lambda_handler(event, context):
     print("new_capacity = " + str(new_capacity) + " orig_capacity " + str(orig_capacity))
     #Smaller class, so need to move people to waitlist and refund credits
     if(new_capacity < orig_capacity):
-        moveAboveCapacityToWaitlist(class_date, new_capacity, isFree)
+        moveAboveCapacityToWaitlist(class_date, new_capacity, isFree, class_type)
         
     #Bigger class, so move people off the waitlist and charge them a credit
     elif(new_capacity > orig_capacity):
         print("bigger capacity!")
-        moveBelowCapacityOffWaitlist(class_date, new_capacity, isFree, spots_taken)
+        moveBelowCapacityOffWaitlist(class_date, new_capacity, isFree, spots_taken, class_type)
     
     return {
         'statusCode': 200,
@@ -136,7 +138,7 @@ def updateLocation(class_date, new_loc_id):
     print(str(response))
     
     
-def moveAboveCapacityToWaitlist(class_date, capacity, isFree):
+def moveAboveCapacityToWaitlist(class_date, capacity, isFree, class_type):
     print("in moveAboveCapacityToWaitlist")
     
     #First, look who was reserved above new capacity and credit them back
@@ -152,16 +154,16 @@ def moveAboveCapacityToWaitlist(class_date, capacity, isFree):
         
         #Paid class is being made smaller, so credit users losing reserved spots
         if not isFree and (waitlist_number == 0 and spot_number > capacity):
-            returnPaidCredit(dbName)
+            returnPaidCredit(dbName, class_type)
             
             #Notify user via email:
             email = getEmailForUser(dbName)
-            sendWaitlistEmail(email, class_date)
+            sendWaitlistEmail(email, class_date, class_type)
             
     #Next, reorder the list
     reorderPositions(class_date, True, isFree, capacity)
 
-def moveBelowCapacityOffWaitlist(class_date, capacity, isFree, spots_taken):
+def moveBelowCapacityOffWaitlist(class_date, capacity, isFree, spots_taken, class_type):
     print("in moveBelowCapacityOffWaitlist")
     
     waitlisted_peeps = []
@@ -173,6 +175,9 @@ def moveBelowCapacityOffWaitlist(class_date, capacity, isFree, spots_taken):
     query_response = table.query(
         KeyConditionExpression=Key('class_date').eq(class_date)
     )
+    
+    if len(query_response['Items']) == 0:
+        return
     
     for i in query_response['Items']:
         dbName = i['username']
@@ -197,26 +202,36 @@ def moveBelowCapacityOffWaitlist(class_date, capacity, isFree, spots_taken):
     sorted_waitlist = sorted(waitlisted_peeps, key = lambda i: i['waitlist_number'])
     
     #Step 2: Loop through sorted waitlist and charge a credit for everyone who fits in new capacity
-    i = 0
-    while(i < availSpots): 
+    print("sorted_waitlist = " + str(sorted_waitlist))
+    if len(sorted_waitlist) > 0:
+        i = 0
+        peopleToMove = availSpots - 1
+        print("peopleToMove: " + str(peopleToMove) )
         
-        waitListPerson = sorted_waitlist[i]
-        username = waitListPerson['username']
-    
-        print("moving " + username + "  in off the waitlist and charging a credit!")
-        chargeCreditForBumpedUpUser(username)
+        while(i < (availSpots - 1) and i < len(sorted_waitlist)): 
             
-        #Notify user via email:
-        email = getEmailForUser(username)
-        sendReservedEmail(email, class_date)
-         
-        i = i + 1
+            waitListPerson = sorted_waitlist[i]
+            print("waitlisted person: " +  waitListPerson['username'])
+            username = waitListPerson['username']
+        
+            print("moving " + username + "  in off the waitlist and charging a credit!")
+            chargeCreditForBumpedUpUser(username, class_type)
+                
+            #Notify user via email:
+            email = getEmailForUser(username)
+            sendReservedEmail(email, class_date, class_type)
+             
+            i = i + 1
             
     #Next, reorder the list
     reorderPositions(class_date, True, isFree, capacity)
 
-def chargeCreditForBumpedUpUser(username):
+def chargeCreditForBumpedUpUser(username, class_type):
     table = dynamodb.Table('HighLiveCredits')
+    
+    creditAmount = 1
+    if(class_type =="Boot-Low Combo"):
+        creditAmount = 1.5
  
     update_response = table.update_item(
         Key={
@@ -224,7 +239,7 @@ def chargeCreditForBumpedUpUser(username):
         },
        UpdateExpression='SET credits = if_not_exists(credits, :zero) - :incr',
             ExpressionAttributeValues={
-                ':incr': 1, ':zero': 0
+                ':incr': Decimal(creditAmount), ':zero': 0
             },
             ReturnValues="UPDATED_NEW"
     )
@@ -284,8 +299,13 @@ def reorderPositions(class_date, reserved, isFree, capacity):
         )
         i += 1
         
-def returnPaidCredit(username):
+def returnPaidCredit(username, class_type):
     table = dynamodb.Table('HighLiveCredits')
+    
+    creditAmount = 1
+    if(class_type =="Boot-Low Combo"):
+        creditAmount = 1.5
+        
     response = table.update_item(
         Key={
             'username': username
@@ -293,7 +313,7 @@ def returnPaidCredit(username):
         UpdateExpression='SET credits = if_not_exists(credits, :zero) + :incr',
            # ConditionExpression="credits > :zero",
             ExpressionAttributeValues={
-                ':incr': 1, ':zero': 0
+                ':incr': Decimal(creditAmount), ':zero': 0
             },
         ReturnValues="UPDATED_NEW"
     )
@@ -303,8 +323,13 @@ def getClassDetails(class_date):
     #Step 1: Get Location
     table = dynamodb.Table('HighClasses')
     location = ''
-    classDateObj = datetime.strptime(class_date, '%Y-%m-%d')
-    class_year = classDateObj.strftime( "%Y")
+    
+    classyearsplit = class_date.split("-")
+    class_year = classyearsplit[0]
+
+    #classDateObj = datetime.strptime(class_date, '%Y-%m-%d')
+    
+    #class_year = classDateObj.strftime( "%Y")
     isFree = False
     class_time = ''
   
@@ -317,6 +342,7 @@ def getClassDetails(class_date):
         location = i['location']
         class_time = i['class_time']
         spots_taken = i['spots_taken']
+        class_type = i['class_type']
         if 'isFree' in i.keys():
             isFreeString = i['isFree']
             if isFreeString == "True":
@@ -324,6 +350,8 @@ def getClassDetails(class_date):
 
     #Step 2: Get Capacity for Location
     table = dynamodb.Table('HighLocation')
+    
+    print("querying HighLocation for " + location)
   
     response = table.query(
         KeyConditionExpression=Key('name').eq(location)
@@ -337,14 +365,15 @@ def getClassDetails(class_date):
         'capacity' : capacity,
         'isFree' : isFree,
         'class_time' : class_time,
-        'spots_taken' : spots_taken
+        'spots_taken' : spots_taken, 
+        'class_type' : class_type
     }
     return data
     
     
 def getEmailForUser(username):
     print("in getEmailForUser")
-    table = dynamodb.Table('HighUsers')
+    table = dynamodb.Table('SiteUsers')
     query_response = table.query(
         KeyConditionExpression=Key('username').eq(username)
     )
@@ -353,17 +382,17 @@ def getEmailForUser(username):
         return email
         
         
-def sendWaitlistEmail(email, class_date):
+def sendWaitlistEmail(email, class_date, class_type):
     print("in sendEmail")
     SENDER = "anniecassiehigh@gmail.com"
     AWS_REGION = "us-east-2"
-    SUBJECT = str(class_date) + " High Class Moving to Smaller Location"
+    SUBJECT = str(class_date) + " " + class_type + " Class Moving to Smaller Location"
     CHARSET = "UTF-8"
 
-    BODY_TEXT = ("High Class Moving to Smaller Location")
+    BODY_TEXT = (str(class_date) + " " + class_type + " Class Moving to Smaller Location")
     BODY_HTML = """<html><head></head><body>
-  <h1>""" + str(class_date) + """ High Class Moving to Smaller Location</h1>
-  <p>We regret the inconvenience, but wish to notify you that the High Class scheduled for """ + str(class_date) + """ has been moved to a smaller location and you are now on the waitlist. Your class credit will be returned to your account for future use.</p>
+  <h1>""" + str(class_date) + """ """ + class_type + """ Class Moving to Smaller Location</h1>
+  <p>We regret the inconvenience, but wish to notify you that the """ + class_type + """ Class scheduled for """ + str(class_date) + """ has been moved to a smaller location and you are now on the waitlist. Your class credit will be returned to your account for future use.</p>
 </body></html>
  """
     client = boto3.client('ses',region_name=AWS_REGION)
@@ -417,17 +446,17 @@ def sendWaitlistEmail(email, class_date):
         'body': json.dumps('Relocation Notification Email Sent!')
     }
 
-def sendReservedEmail(email, class_date):
+def sendReservedEmail(email, class_date, class_type):
     print("in sendEmail")
     SENDER = "anniecassiehigh@gmail.com"
     AWS_REGION = "us-east-2"
-    SUBJECT = str(class_date) + " You're In! High Class Moving to Larger Location"
+    SUBJECT = str(class_date) + " You're In! " + class_type + " Class Moving to Larger Location"
     CHARSET = "UTF-8"
 
-    BODY_TEXT = ("You're In! High Class Moving to Larger Location")
+    BODY_TEXT = ("You're In! " + class_type + " Class Moving to Larger Location")
     BODY_HTML = """<html><head></head><body>
-  <h1>""" + str(class_date) + """ You're In! High Class Moving to Larger Location</h1>
-  <p>Hello! The High Class scheduled for """ + str(class_date) + """ has been moved to a larger location and you now have a reserved spot. If you can no longer make it, please cancel prior to 3 hours before class to ensure a refunded credit.</p>
+  <h1>""" + str(class_date) + """ You're In! """ + class_type + """ Class Moving to Larger Location</h1>
+  <p>Hello! The """ + class_type + """ Class scheduled for """ + str(class_date) + """ has been moved to a larger location and you now have a reserved spot. If you can no longer make it, please cancel prior to 3 hours before class to ensure a refunded credit.</p>
 </body></html>
  """
     client = boto3.client('ses',region_name=AWS_REGION)

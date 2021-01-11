@@ -273,6 +273,7 @@ body {
 												<option value="High">High</option>
 												<option value="High-Low">High-Low</option>
 												<option value="Boot Camp">Boot Camp</option>
+												<option value="Boot-Low Combo">High-Low/Boot Camp Combo</option>
 											</select>
 											</div>
 											<div class="col-6 col-12-small">
@@ -280,6 +281,9 @@ body {
 											</div>
 											<div class="col-6 col-12-small">
 												<input name="posttime" id="posttime" placeholder="Post Time (i.e. 17:00)" type="text" maxlength="5" />
+											</div>
+											<div class="col-6 col-12-small">
+												<input name="class_info" id="class_info" placeholder="Class Info (i.e. Bring a towel!") type="text" maxlength="50" />
 											</div>
 											<div class="col-12">
 												<a href="javascript:postLiveCLass()" class="form-button-submit button icon solid fa-envelope">Submit</a>
@@ -396,6 +400,30 @@ body {
 
 				</div>
 
+				<div id="editClassTimeModal" class="modal">
+
+				  <!-- Modal content -->
+				  <div class="modal-content">
+				    <span class="close">&times;</span>
+				    <div class="col-6 col-12-small">
+						<input name="classEditTime" id="classEditTime" placeholder="Class Time (i.e. 17:00)" type="text" maxlength="5" />
+					</div>	
+				    <div style="display:none">
+				    	<p>
+				    		<input id="timeChangeClassDate">
+				    	</p>
+				    </div>
+				    <div>
+				    	<p></p>
+				    </div>
+				    <div class="col-6 col-12-small">
+						<a href="javascript:changeClassTime()" class="form-button-submit button icon solid fa-envelope">Save New Time</a>
+					</div>
+
+				  </div>
+
+				</div>
+
 			<!-- Footer -->
 				
 					<div id="copyright" class="container">
@@ -422,10 +450,12 @@ var classtypes = []
 // Get the modal
 var modal = document.getElementById("editLocationModal");
 var messageModal = document.getElementById("sendMessageModal")
+var timeModal = document.getElementById("editClassTimeModal")
 
 // Get the <span> element that closes the modal
 var span = document.getElementsByClassName("close")[0];
 var messageSpan = document.getElementsByClassName("close")[1];
+var timeSpan = document.getElementsByClassName("close")[2];
 
 // When the user clicks on the button, open the modal
 function openModal(list_index) {
@@ -438,6 +468,11 @@ function openMessageModal(list_index) {
   	messageModal.style.display = "block";
 }
 
+function openTimeModal(list_index) {
+	document.getElementById("timeChangeClassDate").value = classdates[list_index]
+  	timeModal.style.display = "block";
+}
+
 // When the user clicks on <span> (x), close the modal
 span.onclick = function() {
   modal.style.display = "none";
@@ -445,6 +480,10 @@ span.onclick = function() {
 
 messageSpan.onclick = function() {
   messageModal.style.display = "none";
+}
+
+timeSpan.onclick = function() {
+  timeModal.style.display = "none";
 }
 
 // When the user clicks anywhere outside of the modal, close it
@@ -487,6 +526,36 @@ function changeClassLocation()
 	}
 
 	postRequest.send(JSON.stringify(data))
+}
+
+async function changeClassTime()
+{
+	var data = {
+  		"class_time" : document.getElementById("classEditTime").value,
+  		"class_date" : document.getElementById("timeChangeClassDate").value
+
+	};
+	
+	const settings = 
+	{
+        method: 'POST',
+        headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json;charset=UTF-8',
+            'X-Api-Key': parseCookie()
+        },
+        body: JSON.stringify(data)
+    }
+
+	const resp = await fetch("https://4r88d170yl.execute-api.us-east-2.amazonaws.com/default/any", settings)
+    if (resp.ok) {
+        alert("New Time Saved!")
+	  	window.location.reload()
+    } else {
+        alert("Uh oh: " + resp.responseText)
+    }
+
+	
 }
 
 
@@ -618,6 +687,7 @@ function getAdminData()
 	timeInputMask(newclasstime);
 	timeInputMask(streamtime);
 	timeInputMask(posttime);
+	timeInputMask(classEditTime)
 
 	var postRequest = new XMLHttpRequest()
 	postRequest.open('POST', 'https://iqtl1ffmkd.execute-api.us-east-2.amazonaws.com/default/any', true)
@@ -759,12 +829,20 @@ function populatePage(requestData)
 
 	   	var rosterLink = document.createElement('a');
 	   	rosterLink.href = "javascript:viewRoster(" + i + ")"
-	   	rosterLink.text = classDateTime
+	   	rosterLink.text = spots_taken
+
+	   	var dateTimeLink = document.createElement('a');
+	    dateTimeLink.href = "javascript:openTimeModal(" + i + ")"
+	    dateTimeLink.text = classDateTime
 
 		row = table.insertRow(i +1)
-		var datetimeCell = row.insertCell(0)
-		datetimeCell.appendChild(rosterLink)
-		row.insertCell(1).innerHTML = spots_taken;
+		var dateTimeCell = row.insertCell(0)
+		dateTimeCell.appendChild(dateTimeLink)
+
+
+		var spotsCell = row.insertCell(1)
+		spotsCell.appendChild(rosterLink)
+
 		var locCell = row.insertCell(2)
 		locCell.appendChild(locLink)
 		row.insertCell(3).innerHTML = class_type
@@ -846,7 +924,8 @@ function postLiveCLass()
   		"isFree"			: isFreeString,
   		"post_date"			: document.getElementById('postdate').value,
   		"post_time"			: document.getElementById('posttime').value,
-  		"class_type"		: document.getElementById('class_type').value
+  		"class_type"		: document.getElementById('class_type').value,
+  		"class_info"		: document.getElementById('class_info').value
 	};
 
 	postRequest.open('POST', 'https://716b9237t4.execute-api.us-east-2.amazonaws.com/default/any', true)

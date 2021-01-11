@@ -1,7 +1,7 @@
 import boto3
 import json
 import logging
-from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Key, Attr
 from datetime import datetime
 from botocore.exceptions import ClientError
 
@@ -94,6 +94,8 @@ def getTotalPaidCreditsForUser(username):
 			credits = credits +4
 		elif amountPaid == "50.00":
 			credits = credits + 10
+		elif amountPaid == "85.00":
+			credits = credits + 10
 
 	#if credits > 0:		
 		#print(username + " has " + str(credits) + " credits")   
@@ -104,6 +106,8 @@ def getTotalPaidCreditsForUser(username):
 
 def getPaidClassCountForUser(username):
 	table = dynamodb.Table('HighLiveClassSignup')
+
+
 	query_response = table.query(
 		KeyConditionExpression=Key('username').eq(username),
 		IndexName="username-index"
@@ -111,6 +115,8 @@ def getPaidClassCountForUser(username):
 	countClasses = 0
 	
 	for i in query_response['Items']:
+		classCreditAmount =1
+		class_type = "High"
 		class_date = i['class_date']
 		reserve_position = i['reserve_position']
 
@@ -121,15 +127,23 @@ def getPaidClassCountForUser(username):
 		class_year = datetime.now().strftime( "%Y")
 		
 		classtable = dynamodb.Table('HighClasses')
-		classresponse = classtable.query(
-		KeyConditionExpression=Key('class_year').eq(class_year) & Key('class_date').eq(class_date)
+		classresponse = classtable.scan(
+		FilterExpression=Attr('class_date').eq(class_date)
 		)
 
 		for l in classresponse['Items']:
 			isFree = l['isFree']
 
+			if 'class_type' in l.keys():
+				class_type = l['class_type']
+
 			if isFree == "False":
-				countClasses = countClasses + 1
+				if class_type == "Boot-Low Combo":
+					classCreditAmount =1.5
+
+				countClasses = countClasses + classCreditAmount
+
+
 
 	logger.debug(str(countClasses) + " class signups found for " + username)
 	return countClasses
