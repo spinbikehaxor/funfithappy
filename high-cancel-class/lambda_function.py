@@ -91,6 +91,9 @@ def deleteClass(body):
     class_year_split = class_date.split('-')
     class_year = class_year_split[0]
     
+    class_date_trim = class_date.split(" ")
+    class_date_trim_string = class_date_trim[0]
+    
     class_details = getClassDetails(class_date, class_type)
     class_key = class_details['class_date']
     isFree = class_details['isFree']
@@ -101,7 +104,7 @@ def deleteClass(body):
             'class_date': class_key
         }
     )
-    deleteAndCreditReservations(class_key, isFree)
+    deleteAndCreditReservations(class_key, class_date_trim_string, class_type, isFree)
 
     
 def getClassDetails(class_date, class_type):
@@ -147,14 +150,18 @@ def getClassDetails(class_date, class_type):
     }
     return data
     
-def deleteAndCreditReservations(class_date, isFree):
+def deleteAndCreditReservations(class_key, class_date, class_type, isFree):
     print("in deleteAndCreditReservations")
     dynamodb = boto3.resource('dynamodb', region_name='us-east-2', endpoint_url="https://dynamodb.us-east-2.amazonaws.com")
     table = dynamodb.Table('HighLiveClassSignup')
     
+    creditAmount = 1.5 if (class_type =="Boot-Low Combo") else 1  
+    print("creditAmount = " + str(creditAmount))
+    
     query_response = table.query(
-        KeyConditionExpression=Key('class_date').eq(class_date)
+        KeyConditionExpression=Key('class_date').eq(class_key)
     )
+    
     
     for i in query_response['Items']:
         username = i['username']
@@ -163,22 +170,22 @@ def deleteAndCreditReservations(class_date, isFree):
         
         #Paid class is being cancelled, so credit users with reserved spots
         if not isFree and (spot_number > 0 and waitlist_number == 0):
-            returnPaidCredit(username)
+            returnPaidCredit(username, creditAmount)
             
         #Notify User
         email = getEmailForUser(username)
-        sendEmail(email, class_date)
+        sendEmail(email, class_date, class_type)
         
         #Delete reservation
         response = table.delete_item(
             Key={
                 'username': username,
-                'class_date': class_date
+                'class_date': class_key
             }
         )
   
             
-def returnPaidCredit(username):
+def returnPaidCredit(username, creditAmount):
     table = dynamodb.Table('HighLiveCredits')
     response = table.update_item(
         Key={
@@ -187,7 +194,7 @@ def returnPaidCredit(username):
         UpdateExpression='SET credits = if_not_exists(credits, :zero) + :incr',
            # ConditionExpression="credits > :zero",
             ExpressionAttributeValues={
-                ':incr': 1, ':zero': 0
+                ':incr': Decimal(creditAmount), ':zero': 0
             },
         ReturnValues="UPDATED_NEW"
     )    
@@ -203,17 +210,17 @@ def getEmailForUser(username):
         return email
         
         
-def sendEmail(email, class_date):
+def sendEmail(email, class_date, class_type):
     print("in sendEmail")
     SENDER = "anniecassiehigh@gmail.com"
     AWS_REGION = "us-east-2"
-    SUBJECT = str(class_date) + " High Class Cancelled"
+    SUBJECT = str(class_date) + " " + class_type + "  Class Cancelled"
     CHARSET = "UTF-8"
 
-    BODY_TEXT = ("High Class Cancelled")
+    BODY_TEXT = (class_type + " Class Cancelled")
     BODY_HTML = """<html><head></head><body>
-  <h1>""" + str(class_date) + """ High Class Cancelled</h1>
-  <p>We regret the inconvenience, but wish to notify you that the High Class previously scheduled for """ + str(class_date) + """ has been cancelled. Your class credit will be returned to your account for future use.</p>
+  <h1>""" + str(class_date) + """ Class Cancelled</h1>
+  <p>We regret the inconvenience, but wish to notify you that the """ + class_type + """ Class previously scheduled for """ + str(class_date) + """ has been cancelled. Your class credit will be returned to your account for future use.</p>
 </body></html>
  """
     client = boto3.client('ses',region_name=AWS_REGION)
