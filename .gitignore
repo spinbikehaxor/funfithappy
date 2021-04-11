@@ -2,6 +2,7 @@ tests/credentials.json
 *function.zip
 *package*
 *.mov
+*DS_Store*
 high-get-user/package/*
 high-cancel-reservation/function.zip
 high-get-user/.DS_Store
@@ -14,6 +15,7 @@ high-save-streaming-link/package/*
 website/.DS_Store
 .DS_Store
 high-cancel-reservation/.DS_Store
+high-delete-streaming-time/.DS_Store
 high-create-live-class/.DS_Store
 high-create-live-class/HighCreateLiveClass-d280da87-3ef9-4034-8811-9711155c5e71.zip
 high-create-location/.DS_Store
@@ -35,3 +37,7 @@ high-waiver/.DS_Store
 high-waiver/HighWaiver-e8f2e545-84c5-45d2-a39e-aac6bb1e7afe.zip
 scripts/.DS_Store
 scripts/sendBlastEmail.py
+terraform/prd/terraform.tfstate.backup
+terraform/prd/terraform.tfstate
+terraform/prd/.terraform/*
+terraform/modules/.terraform/*
