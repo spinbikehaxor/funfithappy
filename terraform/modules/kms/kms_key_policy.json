@@ -1,0 +1,63 @@
+
+{
+    "Id": "key-consolepolicy-3",
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "Enable IAM User Permissions",
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:iam::876619414335:root"
+            },
+            "Action": "kms:*",
+            "Resource": "*"
+        },
+        {
+            "Sid": "Allow use of the key",
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": [
+                    "arn:aws:iam::876619414335:role/Lambda-Dynamo-Secrets",
+                    "arn:aws:iam::876619414335:user/wonton",
+                    "arn:aws:iam::876619414335:role/DynamoReadLambdaExecute",
+                    "arn:aws:iam::876619414335:role/Lambda-Dynamo-Read",
+                    "arn:aws:iam::876619414335:role/Lambda-Dynamo-Write",
+                    "arn:aws:iam::876619414335:role/Gym-Scheduler-EC2"
+                ]
+            },
+            "Action": [
+                "kms:Encrypt",
+                "kms:Decrypt",
+                "kms:ReEncrypt*",
+                "kms:GenerateDataKey*",
+                "kms:DescribeKey"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "Allow attachment of persistent resources",
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": [
+                    "arn:aws:iam::876619414335:role/Lambda-Dynamo-Secrets",
+                    "arn:aws:iam::876619414335:user/wonton",
+                    "arn:aws:iam::876619414335:role/DynamoReadLambdaExecute",
+                    "arn:aws:iam::876619414335:role/Lambda-Dynamo-Read",
+                    "arn:aws:iam::876619414335:role/Lambda-Dynamo-Write",
+                    "arn:aws:iam::876619414335:role/Gym-Scheduler-EC2"
+                ]
+            },
+            "Action": [
+                "kms:CreateGrant",
+                "kms:ListGrants",
+                "kms:RevokeGrant"
+            ],
+            "Resource": "*",
+            "Condition": {
+                "Bool": {
+                    "kms:GrantIsForAWSResource": "true"
+                }
+            }
+        }
+    ]
+}

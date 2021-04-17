@@ -1,0 +1,139 @@
+<!DOCTYPE HTML>
+<!--
+	Slate by Pixelarity
+	pixelarity.com | hello@pixelarity.com
+	License: pixelarity.com/license
+-->
+<html>
+	<head>
+		<title>Sign In</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+	</head>
+	<body class="is-preload">
+
+		<!-- Header -->
+			<header id="header">
+				<h1><a href="index.html">Fun Fit Happy</a></h1>
+				<nav id="nav">
+								<ul>
+									<li><a class="icon solid fa-home" href="index.html"><span>Home</span></a></li>
+									<li><a href="registration.html"><span>Create Your Account</span></a></li>
+									<li><a href="sign-in.html"><span>Sign In</span></a></li>
+									<li>
+										<a id="high-top-menu" href="high-fitness.html"><span>High Fitness</span></a>
+											<ul>
+												<li id="book-class"><a href="high-live-intro.html" >Book a Live Class</a></li>
+												<li id="streaming"><a href="high-fitness-intro.html">Online Streaming</a></li>
+											</ul>
+									</li>
+									<li><a href="buy-package-intro.html"><span>Buy A Package</span></a></li>
+								</ul>
+							</nav>
+			</header>
+
+		<!-- Main -->
+			<section id="main" class="wrapper">
+				<div class="inner">
+
+					<section>
+					<div class="container">
+						<div class="row">
+							<div class="col-6 col-12-medium">
+								<section>
+									<form method="post" action="https://1fuqo5lkh6.execute-api.us-east-2.amazonaws.com/default/any">
+										<div class="row gtr-50">
+											<div class="col-6 col-12-small">
+												<input name="username" id="username" placeholder="Username" type="text" />
+											</div>
+											<div class="col-6 col-12-small">
+												<input name="pwd" id="pwd" placeholder="Password" type="password" />
+											</div>
+											<div class="col-6 col-12-small">
+											</div>
+											<div class="col-6 col-12-small">
+												<a href="../forgot-password.html">Forgot Password</a>
+											</div>
+											<div class="col-12">
+												<a href="javascript:xmlRequest()" class="form-button-submit button icon solid fa-envelope">Submit</a>
+											</div>
+
+										</div>
+									</form>
+								</section>
+							</div>
+					</div>
+				</section>
+
+				</div>
+			</section>
+
+		
+
+		<!-- Footer -->
+			<!-- Footer -->
+			<footer id="footer">
+				<div class="inner">
+					<p class="copyright">&copy; Fun Fit Happy. All rights reserved. Design: <a href="hello@pixelarity.com">Pixelarity</a></p>
+					
+				</div>
+			</footer>
+
+		<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/jquery.dropotron.min.js"></script>
+			<script src="assets/js/jquery.scrollex.min.js"></script>
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+
+<script>
+document.onkeydown=function(evt)
+{
+    var keyCode = evt ? (evt.which ? evt.which : evt.keyCode) : event.keyCode;
+    if(keyCode == 13)
+    {
+        xmlRequest()
+    }
+}
+
+function xmlRequest()
+{
+
+	var postRequest = new XMLHttpRequest()
+	var aDayinSeconds = 60*60*24
+
+	var data = {
+  		"username"			: document.getElementById('username').value,
+  		"password"			: document.getElementById('pwd').value
+	};
+
+	postRequest.open('POST', 'https://1fuqo5lkh6.execute-api.us-east-2.amazonaws.com/default/any', true)
+	postRequest.setRequestHeader('Content-type', 'application/json;charset=UTF-8');
+	//postRequest.withCredentials = true;
+	
+	postRequest.onload = function () 
+	{
+	  // Begin accessing JSON data here
+	  var responseData = JSON.parse(this.response)
+
+	  if (postRequest.status >= 200 && postRequest.status < 400) 
+	  {
+	  		document.cookie = 'auth=' + postRequest.responseText + ';secure;Path=/;max-age=' + aDayinSeconds
+	  		window.location.replace('user-info.html')
+	  }
+	  else
+	  {
+	  		window.alert("Incorrect Username or Password. Please try again");
+	  }
+	}
+
+	postRequest.send(JSON.stringify(data))
+}
+</script>
+
+	</body>
+</html>

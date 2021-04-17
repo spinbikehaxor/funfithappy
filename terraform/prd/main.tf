@@ -5,3 +5,21 @@ provider "aws" {
 module "api-gateway" {
 	source = "../modules/api-gateway"
 }
+
+module "dynamodb" {
+	source = "../modules/dynamodb"
+	kms_id = module.kms.kms_arn
+}
+
+module "s3" {
+	source = "../modules/s3"
+}
+
+module "kms" {
+	source = "../modules/kms"
+}
+
+module "secrets" {
+	source = "../modules/secrets"
+	kms_id = module.kms.kms_id
+}

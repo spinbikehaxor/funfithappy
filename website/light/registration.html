@@ -1,0 +1,186 @@
+<!DOCTYPE HTML>
+<!--
+	Slate by Pixelarity
+	pixelarity.com | hello@pixelarity.com
+	License: pixelarity.com/license
+-->
+<html>
+	<head>
+		<title>Create Your Account</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+		<script src="https://www.google.com/recaptcha/api.js" async defer></script>
+	</head>
+	<body class="is-preload">
+
+		<!-- Header -->
+			<header id="header">
+				<h1><a href="index.html">Fun Fit Happy</a></h1>
+				<!-- Nav -->
+							<nav id="nav">
+								<ul>
+									<li><a class="icon solid fa-home" href="index.html"><span>Home</span></a></li>
+									<li><a href="registration.html"><span>Create Your Account</span></a></li>
+									<li><a href="sign-in.html"><span>Sign In</span></a></li>
+									<li>
+										<a id="high-top-menu" href="high-fitness.html"><span>High Fitness</span></a>
+											<ul>
+												<li id="book-class"><a href="high-live-intro.html" >Book a Live Class</a></li>
+												<li id="streaming"><a href="high-fitness-intro.html">Online Streaming</a></li>
+											</ul>
+									</li>
+									<li><a href="buy-package-intro.html"><span>Buy A Package</span></a></li>
+								</ul>
+							</nav>
+			</header>
+
+		<!-- Main -->
+			<section id="main" class="wrapper">
+				<!-- Main -->
+				<div class="inner">
+					<div class="container">
+						<div class="row">
+							<div class="col-6 col-12-medium">
+								<section>
+									<form method="post" action="https://zo8rwongnl.execute-api.us-east-2.amazonaws.com/default">
+										<div class="row gtr-50">
+											<div class="col-6 col-12-small">
+												<input name="username" id="username" placeholder="Username" type="text" />
+											</div>
+											<div class="col-6 col-12-small">
+												<input name="fname" id="fname" placeholder="First Name" type="text" />
+											</div>
+
+											<div class="col-6 col-12-small">
+												<input name="lname" id="lname" placeholder="Last Name" type="text" />
+											</div>
+											<div class="col-6 col-12-small">
+												<input name="email" id="email" placeholder="Email" type="text" />
+											</div>
+											<div class="col-6 col-12-small">
+												<input name="phone" id="phone" placeholder="Mobile Phone" type="text" />
+											</div>
+											<div class="col-6 col-12-small">
+												<select name="prefContact" id="prefContact" placeholder="Preferred Contact">
+												<option value="email">Preferred Contact Method</option>
+												<option value="email">Email</option>
+												<option value="text">Text</option>
+											</select>
+											</div>
+											<div class="col-6 col-12-small">
+												<input name="pwd" id="pwd" placeholder="Password" type="password" />
+											</div>
+											<div class="col-6 col-12-small">
+												<input name="confpwd" id="confpwd" placeholder="Confirm Password" type="password" />
+											</div>
+											<div class="col-6 col-12-small">
+												<input name="referral" id="referral" placeholder="Referral User ID (Optional)" type="text" />
+											</div>
+											<div class="g-recaptcha" data-sitekey="6LfPL60aAAAAAA7r_C3eo6YCxm0onfzk-VwZ1UQI"></div>
+											<div class="col-12">
+												<a href="javascript:xmlRequest()" class="form-button-submit button icon solid">Submit</a>
+											</div>
+										</div>
+									</form>
+								</section>
+							</div>
+					</div>
+				</div>
+				</section>
+
+			<!-- Footer -->
+
+			<!-- Footer -->
+			<footer id="footer">
+				<div class="inner">
+					<p class="copyright">&copy; Fun Fit Happy. All rights reserved. Design: <a href="hello@pixelarity.com">Pixelarity</a></p>
+					
+				</div>
+			</footer>
+				
+					
+
+		</div>
+
+		<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/jquery.dropotron.min.js"></script>
+			<script src="assets/js/jquery.scrollex.min.js"></script>
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+
+<script>
+
+async function processRequest()
+{
+	const data = await sendRequest();
+	alert("processrequest data: " + data);
+}
+
+
+function xmlRequest()
+{
+	if(document.getElementById('pwd').value != document.getElementById('confpwd').value)
+	{
+		alert("Password values do not match");
+		return;
+	}
+	var v = grecaptcha.getResponse();
+
+    if(v.length == 0)
+    {
+        window.alert("Please check 'I'm not a robot");
+        return;
+    } 
+
+	var postRequest = new XMLHttpRequest()
+
+	var data = {
+  		"username"			: document.getElementById('username').value,
+  		"password"			: document.getElementById('pwd').value,
+  		"fname"				: document.getElementById('fname').value,
+  		"lname"				: document.getElementById('lname').value,
+  		"email"				: document.getElementById('email').value,
+  		"preferredContact"	: document.getElementById('prefContact').value,
+  		"phone"				: document.getElementById('phone').value,
+  		"captcha"			: v,
+  		"referred_by"		: document.getElementById('referral').value
+	};
+
+	postRequest.open('POST', 'https://2yhc9jvjca.execute-api.us-east-2.amazonaws.com/default/post', true)
+	postRequest.setRequestHeader('Content-type', 'application/json;charset=UTF-8');
+	
+	postRequest.onload = function () 
+	{
+	  // Begin accessing JSON data here
+	  var responseData = JSON.parse(this.response)
+
+	  if (postRequest.status >= 200 && postRequest.status < 400) 
+	  {
+	  		alert("Sign Up Successful!")
+	  		window.location.replace("sign-in.html")
+	  }
+	  else 
+	  {
+	  	alert(postRequest.responseText)
+	  }
+	}
+
+	postRequest.send(JSON.stringify(data))
+}
+
+
+
+   function onSubmit(token) {
+     javascript:xmlRequest()
+   }
+
+
+</script>
+
+	</body>
+</html>
