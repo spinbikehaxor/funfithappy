@@ -26,11 +26,11 @@ def lambda_handler(event, context):
     init_validator()
     json_string = json.dumps(event)
     json_data = json.loads(json_string)
-    #body = json.loads(json_data['body'])
+    body = json.loads(json_data['body'])
     isValidPhone = False
     referred_by = ""
     
-    if 'username' not in json_data.keys():
+    if 'username' not in body.keys():
         print("No creds received")
         return {
             'statusCode': 422,
@@ -42,16 +42,16 @@ def lambda_handler(event, context):
             'body': json.dumps("Username Is Required")
         }
     else:
-        username = json_data['username']
-        password = json_data['password']
-        fname = json_data['fname']
-        lname = json_data['lname']
-        email = json_data['email']
-        phone = json_data['phone']
-        preferredContact = json_data['preferredContact']
-        captcha = json_data['captcha']
-        if 'referred_by' in json_data.keys():
-            referred_by = json_data['referred_by']
+        username = body['username']
+        password = body['password']
+        fname = body['fname']
+        lname = body['lname']
+        email = body['email']
+        phone = body['phone']
+        preferredContact = body['preferredContact']
+        captcha = body['captcha']
+        if 'referred_by' in body.keys():
+            referred_by = body['referred_by']
             if referred_by != "":
                 referred_by = referred_by.lower().strip()
 

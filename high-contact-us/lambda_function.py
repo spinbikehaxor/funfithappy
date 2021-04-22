@@ -78,7 +78,7 @@ def isValidCaptcha(captcha):
 
 def sendEmail(name, email, message):
     print("in sendEmail")
-    SENDER = "anniecassiehigh@gmail.com"
+    SENDER = "dwongfitness@gmail.com"
     AWS_REGION = "us-east-2"
     SUBJECT = "Contact Us Inquiry"
     CHARSET = "UTF-8"
@@ -90,7 +90,7 @@ def sendEmail(name, email, message):
   <p>User may be contacted at """ + email + """</p>
 </body></html>
  """
-    email = ["anniecassiehigh@gmail.com", "anniecassiefit@gmail.com"]
+    email = ["dwongfitness@gmail.com", "funfithappy.ca@gmail.com"]
     client = boto3.client('ses',region_name=AWS_REGION)
 
 

@@ -103,7 +103,7 @@ def lambda_handler(event, context):
     class_details = getClassDetails(class_date, class_type)
     isFree = class_details['isFree']
 
-    capacity = class_details['capacity']
+    capacity = int(class_details['capacity'])
     
     if isFree == "False" and not hasPaidCredits(username, class_type):
         return {
@@ -162,8 +162,8 @@ def hasPaidCredits(username, class_type):
         creditThreshold = 1.5
         
     for i in query_response['Items']:
-        credits = i['credits']
-        if credits > creditThreshold:
+        credits = Decimal(i['credits'])
+        if credits >= creditThreshold:
             return True
     
     return False

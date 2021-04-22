@@ -1,0 +1,203 @@
+<!DOCTYPE HTML>
+<!--
+	Slate by Pixelarity
+	pixelarity.com | hello@pixelarity.com
+	License: pixelarity.com/license
+-->
+<html>
+	<head>
+		<title>Fun Fit Happy</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+		<script src="https://www.google.com/recaptcha/api.js" async defer></script>
+		
+	</head>
+	<body class="is-preload">
+
+		<!-- Header -->
+			<header id="header" class="alt">
+				<h1><a href="index.html">Fun Fit Happy</span></a></h1>
+				<nav id="nav">
+								<ul>
+									<li><a href="home.html"><span>Home</span></a></li>
+									<li><a id=reglink href="user-info.html"><span id="regText">Your Account</span></a></li>
+									<li><a id="loginLink" href="buy-package.html"><span id="loginText">Buy A Package</span></a></li>
+									<li>
+										<a id="high-top-menu" href="high-live-list.html"><span>High Fitness</span></a>
+											<ul>
+												<li id="book-class"><a href="high-live-list.html" >Book a Live Class</a></li>
+												<!--<li id="streaming"><a href="high-fitness.html">Online Streaming</a></li> -->
+											</ul>
+									</li>
+									<li><a id="bioLink" href="javascript:signOut()"><span id="bioText">Sign Out</span></a></li>
+								</ul>
+							</nav>
+			</header>
+
+		<!-- Banner -->
+			<section id="banner">
+				<article>
+					<img src="images/tuck_small.jpg" alt=""/>
+					<div class="inner">
+						<h2><a href="#">Have Fun!</a></h2>
+					</div>
+				</article>
+				<article>
+					<img src="images/lunge_small.jpg" alt="" />
+					<div class="inner">
+						<h2><a href="#">Get Fit!</a></h2>
+					</div>
+				</article>
+				<article>
+					<img src="images/hands_small.jpg"  alt="" />
+					<div class="inner">
+						<h2><a href="#">Join an awesome community!</a></h2>
+					</div>
+				</article>
+			</section>
+
+
+		<!-- Contact -->
+			<section id="contact" class="wrapper split">
+				<div class="inner">
+					<section>
+						<h2>Send us a message</h2>
+						<form method="post" action="#">
+							<div class="row gtr-uniform">
+								<div class="col-6 col-12-large col-6-medium col-12-xsmall">
+									<label for="name">Name</label>
+									<input type="text" name="name" id="name" />
+								</div>
+								<div class="col-6 col-12-large col-6-medium col-12-xsmall">
+									<label for="email">Email</label>
+									<input type="email" name="email" id="email" />
+								</div>
+								<div class="col-12">
+									<label for="message">Message</label>
+									<textarea name="message" id="message" rows="5"></textarea>
+								</div>
+								<div class="col-12">
+									<div class="g-recaptcha" data-sitekey="6LfPL60aAAAAAA7r_C3eo6YCxm0onfzk-VwZ1UQI"></div>
+								</div>
+								<div class="col-12">
+									<ul class="actions">
+										<li><<a href="javascript:contactUs()" class="form-button-submit button icon solid fa-envelope">Send Message</a></li>
+										<li><input type="reset" value="Reset" /></li>
+									</ul>
+								</div>
+							</div>
+						</form>
+					</section>
+					<section>
+						<h2>Other ways to reach us</h2>
+						<ul class="bulleted-icons">
+							<li>
+								<span class="icon-wrapper"><span class="icon solid fa-envelope"></span></span>
+								<h3>Email</h3>
+								<p><a href="#">funfithappy.ca@gmail.com</a></p>
+							</li>
+							<li>
+								<span class="icon-wrapper"><span class="icon brands fa-instagram"></span></span>
+								<h3>Instagram</h3>
+								<p><a href="https://www.instagram.com/runnergirlhigh">@runnergirlhigh</a></p>
+							</li>
+							<li>
+								<span class="icon-wrapper"><span class="icon brands fa-facebook-f"></span></span>
+								<h3>Facebook</h3>
+								<p><a href="https://www.facebook.com/funfithappy">@funfithappy</a></p>
+							</li>
+						</ul>
+					</section>
+				</div>
+			</section>
+
+		<!-- Footer -->
+			<footer id="footer">
+				<div class="inner">
+					<p class="copyright">&copy; Fun Fit Happy. All rights reserved. Design: <a href="hello@pixelarity.com">Pixelarity</a></p>
+					
+				</div>
+			</footer>
+
+
+		<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/jquery.dropotron.min.js"></script>
+			<script src="assets/js/jquery.scrollex.min.js"></script>
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+<script>
+window.onload = parseCookie()
+
+function parseCookie()
+{
+	if(document.cookie.length > 0)
+	{
+		jwt = document.cookie.split('; ')
+  		.find(row => row.startsWith('auth'))
+  		.split('=')[1];
+  		return jwt;
+	}
+	else
+	{
+		window.location.replace("index.html")
+	}
+}
+
+function signOut()
+{
+	document.cookie = 'auth=' + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+	window.location.replace("index.html");
+}
+
+function contactUs()
+{
+	var v = grecaptcha.getResponse();
+    if(v.length == 0)
+    {
+        window.alert("Please check 'I'm not a robot");
+        return;
+    } 
+
+	var postRequest = new XMLHttpRequest()
+
+	var data = {
+  		"name"			: document.getElementById('name').value,
+  		"email"			: document.getElementById('email').value,
+  		"message"		: document.getElementById('message').value,
+  		"captcha"		: v
+	};
+
+	postRequest.open('POST', 'https://gmbprqk8k7.execute-api.us-east-2.amazonaws.com/default/any', true)
+	postRequest.setRequestHeader('Content-type', 'application/json;charset=UTF-8');
+	
+	postRequest.onload = function () 
+	{
+	  // Begin accessing JSON data here
+	  var responseData = JSON.parse(this.response)
+
+	  if (postRequest.status >= 200 && postRequest.status < 400) 
+	  {
+	  		alert("Thank you! We will be in touch soon!")
+	  		document.getElementById('name').value = ""
+	  		document.getElementById('email').value = ""
+	  		document.getElementById('message').value = ""
+	  		grecaptcha.reset()
+	  }
+	  else 
+	  {
+	  	alert(postRequest.responseText)
+	  	grecaptcha.reset()
+	  }
+	}
+
+	postRequest.send(JSON.stringify(data))
+}
+
+</script>
+	</body>
+</html>

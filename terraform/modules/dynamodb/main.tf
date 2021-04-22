@@ -102,6 +102,14 @@ resource "aws_dynamodb_table" "high_stream_stats" {
     name = "username"
     type = "S"
   }
+
+  global_secondary_index {
+    name               = "username-index"
+    hash_key           = "username"
+    write_capacity     = 1
+    read_capacity      = 1
+    projection_type    = "ALL"
+  }
 }
 
 resource "aws_dynamodb_table" "high_promo_credit" {
@@ -248,6 +256,14 @@ resource "aws_dynamodb_table" "high_live_class_signup" {
   attribute {
     name = "username"
     type = "S"
+  }
+
+  global_secondary_index {
+    name               = "username-index"
+    hash_key           = "username"
+    write_capacity     = 1
+    read_capacity      = 1
+    projection_type    = "ALL"
   }
 }
 

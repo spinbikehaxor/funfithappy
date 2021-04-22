@@ -6,39 +6,52 @@
 -->
 <html>
 	<head>
-		<title>Untitled</title>
+		<title>User Profile</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 		<link rel="stylesheet" href="assets/css/main.css" />
 		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+		<style>
+			input:disabled {
+    			color: black;
+			}
+			.scrollingTable {
+	            overflow-y: scroll;
+	            width: 100%;
+	        }
+			.visible-scrollbar::-webkit-scrollbar-thumb {
+			  overflow: -moz-scrollbars-vertical; 
+			  overflow: scroll;
+			  height: 2em;
+			}
+			::-webkit-scrollbar {
+			  -webkit-appearance: none;
+			  width: 7px;
+			}
+			::-webkit-scrollbar-thumb {
+			  background-color: rgba(0, 0, 0, .5);
+			  -webkit-box-shadow: 0 0 1px rgba(255, 255, 255, .5);
+			}
+		</style>
 	</head>
 	<body class="is-preload">
 
 		<!-- Header -->
 			<header id="header">
-				<h1><a href="index.html">Slate <span>by Pixelarity</span></a></h1>
+				<h1><a href="index.html">Fun Fit Happy</span></a></h1>
 				<nav id="nav">
 					<ul>
-						<li><a href="index.html">Home</a></li>
+						<li><a href="home.html"><span>Home</span></a></li>
+						<li><a href="user-info.html"><span>Your Account</span></a></li>
+						<li><a href="buy-package.html"><span>Buy A Package</span></a></li>
 						<li>
-							<a href="#" class="submenu fa-angle-down">Page Layouts</a>
+							<a href="#" ><span>High Fitness</span></a>
 							<ul>
-								<li><a href="left-sidebar.html">Left Sidebar</a></li>
-								<li><a href="right-sidebar.html">Right Sidebar</a></li>
-								<li><a href="no-sidebar.html">No Sidebar</a></li>
-								<li>
-									<a href="#">Submenu</a>
-									<ul>
-										<li><a href="#">Option One</a></li>
-										<li><a href="#">Option Two</a></li>
-										<li><a href="#">Option Three</a></li>
-										<li><a href="#">Option Four</a></li>
-									</ul>
-								</li>
+								<li><a href="high-live-list.html">Book a Live Class</a></li>
+								<!--<li><a href="high-fitness.html">Online Streaming</a></li> -->
 							</ul>
 						</li>
-						<li><a href="elements.html">Elements</a></li>
-						<li><a href="#" class="button">Sign Up</a></li>
+						<li><a href="javascript:signOut()"><span>Sign Out</span></a></li>
 					</ul>
 				</nav>
 			</header>
@@ -46,110 +59,115 @@
 		<!-- Main -->
 			<section id="main" class="wrapper">
 				<div class="inner">
-
-					<header class="major">
-						<h2>No Sidebar</h2>
-						<p>Sed magna in pharetra ultricies dolor sit amet consequat adipiscing lorem.</p>
-					</header>
-
-					<!-- Content -->
-						<div class="content">
-							<a href="#" class="image fit"><img src="images/pic07.jpg" alt="" /></a>
-							<h3>Dolore Amet Consequat</h3>
-							<p>Aliquam massa urna, imperdiet sit amet mi non, bibendum euismod est. Curabitur mi justo, tincidunt vel eros ullamcorper, porta cursus justo. Cras vel neque eros. Vestibulum diam quam, mollis at magna consectetur non, malesuada quis augue. Morbi tincidunt pretium interdum est. Curabitur mi justo, tincidunt vel eros ullamcorper, porta cursus justo. Cras vel neque eros. Vestibulum diam.</p>
-							<p>Vestibulum diam quam, mollis at consectetur non, malesuada quis augue. Morbi tincidunt pretium interdum. Morbi mattis elementum orci, nec dictum porta cursus justo. Quisque ultricies lorem in ligula condimentum, et egestas turpis sagittis. Cras ac nunc urna. Nullam eget lobortis purus. Phasellus vitae tortor non est placerat tristique.</p>
-							<h3>Sed Magna Ornare</h3>
-							<p>In vestibulum massa quis arcu lobortis tempus. Nam pretium arcu in odio vulputate luctus. Suspendisse euismod lorem eget lacinia fringilla. Sed sed felis justo. Nunc sodales elit in laoreet aliquam. Nam gravida, nisl sit amet iaculis porttitor, risus nisi rutrum metus.</p>
-							<ul>
-								<li>Faucibus orci lobortis ac adipiscing integer.</li>
-								<li>Col accumsan arcu mi aliquet placerat.</li>
-								<li>Lobortis vestibulum ut magna tempor massa nascetur.</li>
-								<li>Blandit massa non blandit tempor interdum.</li>
-								<li>Lacinia mattis arcu nascetur lobortis.</li>
-							</ul>
-						</div>
+					<p><strong><span id ="status">Page Loading... Please Wait</span></strong></p>
 
 				</div>
-			</section>
-
-		<!-- Contact -->
-			<section id="contact" class="wrapper split">
-				<div class="inner">
-					<section>
-						<h2>Send us a message</h2>
-						<form method="post" action="#">
-							<div class="row gtr-uniform">
-								<div class="col-6 col-12-large col-6-medium col-12-xsmall">
-									<label for="name">Name</label>
-									<input type="text" name="name" id="name" />
-								</div>
-								<div class="col-6 col-12-large col-6-medium col-12-xsmall">
-									<label for="email">Email</label>
-									<input type="email" name="email" id="email" />
-								</div>
-								<div class="col-12">
-									<label for="message">Message</label>
-									<textarea name="message" id="message" rows="5"></textarea>
-								</div>
-								<div class="col-12">
-									<ul class="actions">
-										<li><input type="submit" value="Send Message" class="primary" /></li>
-										<li><input type="reset" value="Reset" /></li>
-									</ul>
-								</div>
+					<div class="inner">
+					<div class="row">
+							<div class="col-6 col-12-medium">
+								<section>
+									<form method="post" action="https://1fuqo5lkh6.execute-api.us-east-2.amazonaws.com/default/any">
+										<div class="row gtr-50">
+											<div class="col-6 col-12-small">
+												<label for="username">Username</label>
+												<input disabled name="username" id="username" placeholder="Username" type="text" />
+											</div>
+											<div class="col-6 col-12-small">
+												<label for="username">First Name</label>
+												<input disabled name="fname" id="fname" type="text" />
+											</div>
+											<div class="col-6 col-12-small">
+												<label for="username">Last Name</label>
+												<input disabled name="lname" id="lname" type="text" />
+											</div>
+											<div class="col-6 col-12-small">
+												<label for="username">Email</label>
+												<input disabled name="email" id="email" type="text" />
+											</div>
+											<div class="col-6 col-12-small">
+												<label for="username">Phone</label>
+												<input disabled name="phone" id="phone" type="text" />
+											</div>
+											<div class="col-6 col-12-small">
+												<label id="waiver-label" for="waiver">Waiver Signed Date</label>
+												<div id="waiver-div"><input disabled name="waiver" id="waiver" type="text" /></div>
+											</div>
+											<div class="col-6 col-12-small">
+												<label for="payment">Next Scheduled Payment</label>
+												<input disabled name="payment" id="payment" type="text" />
+											</div>
+											<div class="col-6 col-12-small">
+												<label for="payment">Available Live Class Credits</label>
+												<input disabled name="credits" id="credits" type="text" />
+											</div>
+										</div>
+									</form>
+								</section>
 							</div>
-						</form>
-					</section>
-					<section>
-						<h2>Other ways to reach us</h2>
-						<ul class="bulleted-icons">
-							<li>
-								<span class="icon-wrapper"><span class="icon solid fa-envelope"></span></span>
-								<h3>Email</h3>
-								<p><a href="#">information@untitled.tld</a></p>
-							</li>
-							<li>
-								<span class="icon-wrapper"><span class="icon brands fa-twitter"></span></span>
-								<h3>Twitter</h3>
-								<p><a href="#">twitter.com/untitled-tld</a></p>
-							</li>
-							<li>
-								<span class="icon-wrapper"><span class="icon solid fa-phone"></span></span>
-								<h3>Phone</h3>
-								<p>(800) 555-0000</p>
-							</li>
-							<li>
-								<span class="icon-wrapper"><span class="icon brands fa-facebook-f"></span></span>
-								<h3>Facebook</h3>
-								<p><a href="#">facebook.com/untitled-tld</a></p>
-							</li>
-							<li>
-								<span class="icon-wrapper"><span class="icon solid fa-home"></span></span>
-								<h3>Mailing Address</h3>
-								<p>1234 Fictional Avenue<br />
-								Nashville, TN 00000<br />
-								United States
-								</p>
-							</li>
-							<li>
-								<span class="icon-wrapper"><span class="icon brands fa-linkedin-in"></span></span>
-								<h3>LinkedIn</h3>
-								<p><a href="#">linkedin.com/untitled-tld</a></p>
-							</li>
-						</ul>
-					</section>
+							<div class="col-6 col-12-medium">
+								<section>
+										<div class="row gtr-50">
+											<div class="col-6 col-12-small" id="streaming-link" style="display:none">
+										
+												<a href="high-fitness.html">
+													<span><strong>Approved For Streaming!</strong></span>
+												</a>
+											</div>	
+											<p>
+										</div>
+									<div class="row gtr-50">
+											<div class="col-6 col-12-small">
+										
+												
+											</div>	
+											<p>
+										</div>
+									<div class="row gtr-50" id="pay-history-div">
+										<div class="col-6 col-12-medium">
+											<h3>Live Class Payments</h3>
+											<table id="paymentHistory">
+												   <tr>
+												      <th>Date</th>
+												      <th>Amount</th>
+												      <th>Credits</th>
+												   </tr>
+											</table>
+										</div>
+									</div>
+								</section>
+							</div>
+								
+						</div>
+						<div class="row gtr-50" id="class-history-div"><p></p></div>
+						<div class="row gtr-50" id="class-history-div">
+
+									<div class="col-6 col-12-medium">
+											<h3 id="classHistoryHeader">Class History:</h3>
+											<div class="scrollingTable visible-scrollbar">
+												<table id="streamHistory">
+													   <tr>
+													      <th>Date</th>
+													      <th>Time</th>
+													      <th>Class Type</th>
+													      <th>Class Name</th>
+													   </tr>
+												</table>
+											</div>
+											<p id="scrollHint" style="display:none"><em>Scroll for more</em></p>
+									</div>
+						</div>
+				</div>
+
 				</div>
 			</section>
+
+
 
 		<!-- Footer -->
 			<footer id="footer">
 				<div class="inner">
-					<p class="copyright">&copy; Untitled Corp. All rights reserved. Lorem ipsum dolor sit amet feugiat tempus aliquam.</p>
-					<ul class="menu">
-						<li><a href="#">Terms<span> of Use</span></a></li>
-						<li><a href="#">Privacy<span> Policy</span></a></li>
-						<li><a href="#">Legal<span> Information</span></a></li>
-					</ul>
+					<p class="copyright">&copy; Fun Fit Happy. All rights reserved. Design: <a href="hello@pixelarity.com">Pixelarity</a></p>
+					
 				</div>
 			</footer>
 
@@ -161,6 +179,213 @@
 			<script src="assets/js/breakpoints.min.js"></script>
 			<script src="assets/js/util.js"></script>
 			<script src="assets/js/main.js"></script>
+<script>
+window.onload = xmlRequest()
+
+
+function makeTableScroll(tablename) 
+{
+	
+    var maxRows = 4;
+
+    var table = document.getElementById(tablename);
+    var wrapper = table.parentNode;
+    var rowsInTable = table.rows.length;
+    var height = 0;
+    if (rowsInTable > maxRows) {
+        for (var i = 0; i < maxRows; i++) {
+            height += table.rows[i].clientHeight;
+        }
+        wrapper.style.height = height + "px";
+        document.getElementById('scrollHint').style.display="block"
+
+    }
+}
+
+function parseCookie()
+{
+	cookiestring = document.cookie;
+	if(cookiestring.length == 0)
+	{
+		window.location.replace("sign-in.html")
+	}
+	jwt = document.cookie.split('; ')
+  	.find(row => row.startsWith('auth'))
+  	.split('=')[1];
+
+  	return jwt;
+}
+
+function xmlRequest()
+{
+	var postRequest = new XMLHttpRequest()
+
+	postRequest.open('POST', 'https://q2ve5wjb9a.execute-api.us-east-2.amazonaws.com/default/post', true)
+	postRequest.setRequestHeader('Content-type', 'application/json;charset=UTF-8');
+
+	authCookie =  parseCookie()
+	postRequest.setRequestHeader('x-api-key', parseCookie())
+	//postRequest.withCredentials = true;
+	
+	postRequest.onload = function () 
+	{
+	  // Begin accessing JSON data here
+	  var responseData = JSON.parse(this.response)
+
+	  if (postRequest.status >= 200 && postRequest.status < 400) 
+	  {
+	  		//alert("success! " + postRequest.responseText)
+	  		populatePage(postRequest.responseText)
+	  		//window.location.replace("../index.html")
+	  }
+	  else 
+	  {
+	  	alert(postRequest.responseText)
+	  }
+	}
+
+	postRequest.send()
+}
+
+function populatePage(requestData)
+{
+	json = JSON.parse(requestData);
+	username = json.username;
+	isTrialPeriod = json.isTrialPeriod
+	var classCounter = 0
+	
+	document.getElementById("username").value = username;
+	document.getElementById("fname").value = json.fname;
+	document.getElementById("lname").value = json.lname;
+	document.getElementById("phone").value = json.phone;
+	document.getElementById("email").value = json.email;
+	document.getElementById("waiver").value = json.waiverSignedDate;
+	document.getElementById("payment").value = json.nextPayment;
+	document.getElementById("credits").value = json.paidLiveCredits;
+
+	//Fill out Payment History
+	livePaymentList = json.paymentHistory
+	var table = document.getElementById("paymentHistory");
+	if(livePaymentList.length > 0)
+	{
+		document.getElementById("paymentHistory").style.display = "block"
+	}
+	for (var i = 0, l = livePaymentList.length; i < l; i++) 
+	{		
+		var obj = livePaymentList[i];
+		amount = obj.amount
+		transaction_date = obj.transaction_date
+		credits = 1
+		if(amount == 35)
+		{
+			credits = 4
+		}
+		else if (amount == 50)
+		{
+			credits = 10
+		}
+		else if (amount == 85)
+		{
+			credits = 10
+		}
+
+		row = table.insertRow(i +1)
+		row.insertCell(0).innerHTML = transaction_date;
+		row.insertCell(1).innerHTML = amount;
+		row.insertCell(2).innerHTML = credits;
+	}
+
+	//Fill out Live Class Attendance History
+	classHistoryList = json.classHistory
+	var streamTable = document.getElementById("streamHistory");
+	if(classHistoryList.length > 0)
+	{
+		document.getElementById("streamHistory").style.display = "block"
+	}
+	for (var i = 0, l = classHistoryList.length; i < l; i++) 
+	{		
+		classCounter = i + 1
+
+		var obj = classHistoryList[i];
+		classdate = obj.classdate
+		class_time = obj.class_time
+		class_type = obj.class_type
+		class_name = obj.class_name
+
+		row = streamTable.insertRow(i +1)
+		row.insertCell(0).innerHTML = classdate;
+		row.insertCell(1).innerHTML = class_time;
+		row.insertCell(2).innerHTML = class_type;
+		row.insertCell(3).innerHTML = class_name;
+	}
+	document.getElementById("classHistoryHeader").textContent = "Class History: " + classCounter + " Taken"
+	makeTableScroll("streamHistory")
+
+
+	isActive = json.isActiveForStream;
+
+	if(isActive == false)
+	{
+		hasWaiver = false;
+		if(json.waiverSignedDate != null)
+		{
+			hasWaiver = true;
+		}
+
+		hasCurrentPayment = false;
+		if(json.isPaymentCurrent == "ACTIVE")
+		{
+			hasCurrentPayment = true
+		}
+		if(hasWaiver == false)
+		{
+			document.getElementById("status").innerHTML="<p>Account Status: Inactive (No Waiver on Record)<a href='../waiver.html'><span> Please Complete Waiver</span></a>"
+		}
+
+
+		/*All of this code has to do with streaming, so I'm commenting it out for now.
+		if(hasWaiver == false && hasCurrentPayment == false && isTrialPeriod == false)
+		{
+			document.getElementById("status").innerHTML="<p>Account Status: Inactive (No Waiver on Record, No Current Payment)<a href='../waiver.html'><span> Please Complete Waiver</span></a>"
+		}
+		else if(hasWaiver == true && hasCurrentPayment == false && isTrialPeriod == false)
+		{
+			document.getElementById("status").innerHTML="<p>Account Status: Inactive (Waiver Signed, No Current Payment)"
+		}
+		else if(hasWaiver == false && hasCurrentPayment == true)
+		{
+			document.getElementById("status").innerHTML="<p>Account Status: Inactive (No Waiver on Record)<a href='../waiver.html'><span> Please Complete Waiver</span></a>"
+		}
+		else if(hasWaiver == false && hasCurrentPayment == false && isTrialPeriod == true)
+		{
+			document.getElementById("status").innerHTML="<p>Account Status: 1 Week Trial Free Trial.<a href='../waiver.html'><span> Please Complete Waiver</span></a>"
+		
+	}
+	else
+	{
+		if (isTrialPeriod == true)
+		{
+			document.getElementById("status").textContent="Account Status: 1 Week Trial Period - Active For Streaming"
+		}
+		else
+		{
+			document.getElementById("status").textContent="Account Status: Active For Streaming"
+		}
+		document.getElementById("streaming-link").style.display = "block"
+	}}*/
+	}
+	else
+	{
+		document.getElementById("status").textContent="Account Status: Active"
+	}
+}
+
+function signOut()
+{
+	document.cookie = 'auth=' + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+	window.location.replace("index.html");
+}
+</script>
 
 	</body>
 </html>

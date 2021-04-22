@@ -9,9 +9,9 @@ from datetime import datetime, timedelta
 def lambda_handler(event, context):
     print('in HighForgotPassword lambda_handler')
     
-    SENDER = "anniecassiehigh@gmail.com"
+    SENDER = "funfithappy.ca@gmail.com"
     AWS_REGION = "us-east-2"
-    SUBJECT = "Password Reset: Annie Cassie Fit"
+    SUBJECT = "Password Reset: Fun Fit Happy"
     CHARSET = "UTF-8"
     
     json_string = json.dumps(event)
@@ -48,10 +48,10 @@ def lambda_handler(event, context):
     token = token_json['token']
     url = os.environ['url'] + token
 
-    BODY_TEXT = ("A request was submitted to reset your Annie Cassie Fit password. If you submitted this request, please click the provided link to reset your password.")
+    BODY_TEXT = ("A request was submitted to reset your Fun Fit Happy password. If you submitted this request, please click the provided link to reset your password.")
     BODY_HTML = """<html><head></head><body>
-  <h1>Password Reset: Annie Cassie Fit</h1>
-  <p>"A request was submitted to reset your Annie Cassie Fit password. If you submitted this request, please click the provided link to 
+  <h1>Password Reset: Fun Fit Happy</h1>
+  <p>"A request was submitted to reset your Fun Fit Happy password. If you submitted this request, please click the provided link to 
   <a href=""" + url + """>reset your password</a>."</p>
 </body></html>
  """ 

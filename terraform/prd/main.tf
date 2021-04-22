@@ -23,3 +23,8 @@ module "secrets" {
 	source = "../modules/secrets"
 	kms_id = module.kms.kms_id
 }
+
+module "lambda" {
+	source = "../modules/lambda"
+	kms_id = module.kms.kms_id
+}

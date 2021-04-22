@@ -1,0 +1,220 @@
+<!DOCTYPE HTML>
+<!--
+	Slate by Pixelarity
+	pixelarity.com | hello@pixelarity.com
+	License: pixelarity.com/license
+-->
+<html>
+	<head>
+		<title>Live HIGH Classes</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<link rel="stylesheet" href="assets/jquery.rtResponsiveTables.min.css">
+		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+		<script src="assets/js/jquery.min.js"></script>
+		<script src="assets/js/jquery.dropotron.min.js"></script>
+		<script src="assets/js/jquery.scrollex.min.js"></script>
+		<script src="assets/jquery.rtResponsiveTables.min.js" type="text/javascript"></script>
+	</head>
+	<body class="is-preload">
+
+		<!-- Header -->
+			<header id="header">
+				<h1><a href="index.html">Fun Fit Happy</span></a></h1>
+
+				<nav id="nav">
+					<ul>
+						<li><a class="icon solid fa-home" href="index.html"><span>Home</span></a></li>
+						<li><a href="registration.html"><span>Create Your Account</span></a></li>
+						<li><a href="sign-in.html"><span>Sign In</span></a></li>
+						<li>
+							<a id="high-top-menu" href="high-live-intro.html"><span>High Fitness</span></a>
+								<ul>
+									<li id="book-class"><a href="high-live-intro.html" >Book a Live Class</a></li>
+									<li id="streaming"><a href="high-fitness-intro.html">Online Streaming</a></li>
+								</ul>
+						</li>
+						<li><a href="buy-package-intro.html"><span>Buy A Package</span></a></li>
+					</ul>
+				</nav>
+			</header>
+
+		<!-- Main -->
+			<section id="main" class="wrapper">
+				<div class="inner">
+					<p><strong><span id ="status">Live HIGH Classes</span></strong></p>
+
+					<h4>NOTE: Cancellations with a refunded credit are allowed up to 3 hours before class</h4>
+
+						<div class="row">
+			
+								<section>
+											<table id="classlist">
+											   <tr>
+											      <th>Date</th>
+											      <th>Time</th>
+											      <th>Location</th>
+											      <th>Type</th>
+											      <th>Info</th>
+											   </tr>
+											</table>
+								
+								</section>
+								
+					
+						</div>
+					</div>
+				</section>
+				</div>
+			</section>
+
+		<!-- Footer -->
+			<footer id="footer">
+				<div class="inner">
+					<p class="copyright">&copy; Fun Fit Happy. All rights reserved. Design: <a href="hello@pixelarity.com">Pixelarity</a></p>
+					
+				</div>
+			</footer>
+
+		<!-- Scripts -->
+			
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+<script>
+$("table").rtResponsiveTables();
+
+
+function checkLoggedIn()
+{
+	if(document.cookie.length > 0)
+	{
+		window.location.replace("high-live-list.html")
+	}
+}
+
+
+window.onload = checkLoggedIn(); getClassData()
+
+var classtypes = []
+var classDateTimes = []
+
+function parseCookie()
+{
+	if(document.cookie.length > 0)
+	{
+		jwt = document.cookie.split('; ')
+  		.find(row => row.startsWith('auth'))
+  		.split('=')[1];
+  		return jwt;
+	}
+	else
+	{
+		return null
+	}
+}
+
+
+function getClassData()
+{
+	
+	var postRequest = new XMLHttpRequest()
+
+	postRequest.open('POST', 'https://qowzyc862j.execute-api.us-east-2.amazonaws.com/default/any', true)
+	postRequest.setRequestHeader('Content-type', 'application/json;charset=UTF-8');
+	postRequest.setRequestHeader('X-Api-Key', parseCookie())
+	postRequest.onload = function () 
+	{
+	  // Begin accessing JSON data here
+	  var responseData = JSON.parse(this.response)
+
+	  if (postRequest.status >= 200 && postRequest.status < 400) 
+	  {
+	  		html = '';
+	  		json = JSON.parse(postRequest.responseText);
+	  		var table = document.getElementById("classlist");
+	  		for (var i = 0, l = json.length; i < l; i++) 
+	  		{		
+    			var obj = json[i];
+    			classdate = obj.class_date
+    			time = obj.class_time
+    			classDateTime = classdate + '/' + time
+
+
+    			capacity = obj.capacity
+    			remaining_spots = capacity
+    			display_name = obj.display_name
+    			reserved = obj.reserved
+    			spots_taken = obj.spots_taken
+    			resspot = obj.res_spot
+    			waitspot = obj.waitSpot
+    			isFree = obj.isFree
+    			class_type = obj.class_type
+    			console.log("class_type = " + class_type)
+    			info = obj.info
+
+    			classtypes[i] = class_type
+    			classDateTimes[i]= classDateTime
+
+    			reserve_data = classdate + "_" + class_type
+
+    			remaining_spots = capacity - spots_taken
+    			if(remaining_spots < 0)
+    			{
+    				remaining_spots = 0
+    			}
+
+    			row = table.insertRow(i +1)
+    			row.insertCell(0).innerHTML = classdate;
+    			row.insertCell(1).innerHTML = time;
+    			row.insertCell(2).innerHTML = display_name;
+    			row.insertCell(3).innerHTML = class_type;
+    			row.insertCell(4).innerHTML = info;
+
+    			
+    			if(reserved == 'reserved')
+    			{
+    				console.log("reserved class!")
+    				row.insertCell(5).innerHTML = "<button type='button' onclick='cancelClass(" + i + ")'>Cancel Spot #" + resspot + "</button>";
+    			}
+    			else if(reserved == 'waitlisted')
+    			{
+    				row.insertCell(5).innerHTML = "<button type='button' onclick='cancelClass(" + i + ")'>Cancel Wait list #" + waitspot + "</button>";
+    			}
+    			else
+    			{
+    				if(remaining_spots == 0)
+    				{
+    					row.insertCell(5).innerHTML = "<button type='button' id=" + reserve_data +" onclick='reserveClass(this)'>Join Wait list</button>";
+    				}
+    				else if(isFree == "True")
+    				{
+    					row.insertCell(5).innerHTML = "<button type='button' id=" + reserve_data +" onclick='reserveClass(this)'>Sign Up Free Class</button>";
+    				}
+    				else
+    				{
+    					row.insertCell(5).innerHTML = "<button type='button' id=" + reserve_data +" onclick='reserveClass(this)'>Sign Up</button>";
+    				}
+    				
+    			}
+    			
+    		}
+		}
+
+	  }
+	  postRequest.send()
+	  document.getElementById("status").textContent="Live HIGH Classes"
+
+	}
+
+
+function reserveClass(reserve_button)
+{ 
+	window.alert("Please sign in to book a class")
+	window.location.replace("sign-in.html")
+}
+</script>
+	</body>
+</html>
