@@ -3,6 +3,7 @@ locals{
 
    lambdas = {
     "HighAnalytics"           = "python/HighAnalytics"
+    "HighGetAdmin"            = "HighGetAdmin"
     }
 }
 

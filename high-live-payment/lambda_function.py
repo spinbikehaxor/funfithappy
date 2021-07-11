@@ -152,10 +152,10 @@ def addLiveCredits(usernameformatted, amount_paid):
     credits = 1
     
     print("amount_paid = " + amount_paid)
-    if(amount_paid == "35.00"):
+    if(amount_paid == "15.00"):
         credits = 4
         print("credits should be 4 " + str(credits))
-    elif(amount_paid == "50.00"):
+    elif(amount_paid == "40.00"):
         credits = 10
         print("credits should be 10 " + str(credits))
     

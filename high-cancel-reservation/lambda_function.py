@@ -103,7 +103,7 @@ def lambda_handler(event, context):
                 'body': json.dumps("Cannot Cancel Within 3 Hours of Class")
             }
     
-    cancelReservation(class_details['class_date'], isFree, class_details['capacity'], class_type)
+    cancelReservation(class_details['class_date'], isFree, int(class_details['capacity']), class_type)
 
     #Update capacity for double classes
     if (class_type =="Boot-Low Combo"):

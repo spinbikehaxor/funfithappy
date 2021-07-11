@@ -384,7 +384,7 @@ def getEmailForUser(username):
         
 def sendWaitlistEmail(email, class_date, class_type):
     print("in sendEmail")
-    SENDER = "anniecassiehigh@gmail.com"
+    SENDER = "funfithappy.ca@gmail.com"
     AWS_REGION = "us-east-2"
     SUBJECT = str(class_date) + " " + class_type + " Class Moving to Smaller Location"
     CHARSET = "UTF-8"
@@ -448,7 +448,7 @@ def sendWaitlistEmail(email, class_date, class_type):
 
 def sendReservedEmail(email, class_date, class_type):
     print("in sendEmail")
-    SENDER = "anniecassiehigh@gmail.com"
+    SENDER = "funfithappy.ca@gmail.com"
     AWS_REGION = "us-east-2"
     SUBJECT = str(class_date) + " You're In! " + class_type + " Class Moving to Larger Location"
     CHARSET = "UTF-8"
