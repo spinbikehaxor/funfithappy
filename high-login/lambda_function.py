@@ -8,10 +8,11 @@ import jwt
 import os
 import requests
 import uuid
-from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Key, Attr
 from botocore.exceptions import ClientError
 from datetime import datetime, timedelta
 
+db_username = ""
 
 def lambda_handler(event, context):
     print('in HighLogin lambda_handler')
@@ -34,8 +35,11 @@ def lambda_handler(event, context):
     else:
         username = body['username'].strip().lower()
         password = body['password'].strip()
+        
+
         if isValidLogin(username, password):
-            authToken = createJWT(username);
+            authToken = createJWT(db_username);
+            print("db_username ", db_username)
             return {
             'statusCode': 200,
             'headers': 
@@ -61,11 +65,18 @@ def lambda_handler(event, context):
 
 def isValidLogin(username, password):
     print ("in isValidLogin")
+    
     dynamodb = boto3.resource('dynamodb', region_name='us-east-2', endpoint_url="https://dynamodb.us-east-2.amazonaws.com")
     table = dynamodb.Table('SiteUsers')
-    
+    global db_username
     query_response = table.query(
         KeyConditionExpression=Key('username').eq(username)
+    )
+
+    #If you can't find by username, try with email
+    if len(query_response['Items'])== 0:
+        query_response = table.scan(
+            FilterExpression=Attr('email').eq(username)
     )
     
     for i in query_response['Items']:
@@ -74,10 +85,10 @@ def isValidLogin(username, password):
         
         print("found user " + username)
         storedHash = json_data['password']
-        print("storedHash: ")
-        print(storedHash)
-        
-        return (verify_password(storedHash, password))
+        db_username = json_data['username'] 
+        print("setting db_username to ", db_username)
+    
+    return (verify_password(storedHash, password))
 
 def createJWT(username):
     secretString = json.dumps(get_secret('jwt-secret'))

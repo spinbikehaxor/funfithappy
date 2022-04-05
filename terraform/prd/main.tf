@@ -28,3 +28,11 @@ module "lambda" {
 	source = "../modules/lambda"
 	kms_id = module.kms.kms_id
 }
+
+module "cloudwatch" {
+	source = "../modules/cloudwatch"
+}
+
+output "lambda_arns" {
+  value = module.lambda.lambda_arns
+ }

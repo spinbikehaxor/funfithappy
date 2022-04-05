@@ -91,17 +91,17 @@ def lambda_handler(event, context):
     isFree = class_details['isFree']
 
     #Let free classes be canceled at any time
-    if not isFree:
-        if not withinCancelWindow(classDateString, class_details['class_time']):
-            return {
-                'statusCode': 422,
-                'headers': {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin':  '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
-                },
-                'body': json.dumps("Cannot Cancel Within 3 Hours of Class")
-            }
+   # if not isFree:
+       # if not withinCancelWindow(classDateString, class_details['class_time']):
+         #   return {
+           #     'statusCode': 422,
+         #       'headers': {
+          #          'Access-Control-Allow-Headers': '*',
+         #           'Access-Control-Allow-Origin':  '*',
+        #            'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
+        #        },
+         #       'body': json.dumps("Cannot Cancel Within 3 Hours of Class")
+        #    }
     
     cancelReservation(class_details['class_date'], isFree, int(class_details['capacity']), class_type)
 
@@ -384,7 +384,7 @@ def sendReservedEmail(email, class_date, class_type):
     #strip ugly timestamp gak off of time
     class_date = class_date.split(" ")[0]
 
-    SENDER = "anniecassiehigh@gmail.com"
+    SENDER = "funfithappy.ca@gmail.com"
     AWS_REGION = "us-east-2"
     SUBJECT = str(class_date) + " " + class_type +  ": You're In! "
     CHARSET = "UTF-8"

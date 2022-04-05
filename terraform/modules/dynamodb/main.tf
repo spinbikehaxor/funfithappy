@@ -118,7 +118,7 @@ resource "aws_dynamodb_table" "high_promo_credit" {
   read_capacity  = 1
   write_capacity = 1
   hash_key       = "username"
-  range_key      = "transaction-date"
+  range_key      = "transaction_date"
 
   server_side_encryption {
     enabled = true
@@ -130,7 +130,7 @@ resource "aws_dynamodb_table" "high_promo_credit" {
     type = "S"
   }
   attribute {
-    name = "transaction-date"
+    name = "transaction_date"
     type = "S"
   }
 }
